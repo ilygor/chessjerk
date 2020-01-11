@@ -5,6 +5,10 @@
 Constants and function for creating a beautiful chess board.
 """
 
+# Imports and setup
+import colorama
+colorama.init()
+
 #### Define constants
 # Piece Strings
 p0 = '     '
