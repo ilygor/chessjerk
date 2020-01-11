@@ -13,7 +13,7 @@ import colorama
 colorama.init()
 
 # Module import statements
-from pretty_board import pretty_board
+#from pretty_board import pretty_board
 
 # Define Constants
 color_list = ['black', 'white']
@@ -163,7 +163,15 @@ class Piece():
         
     def info(self):
         """Gets attributes for the piece"""
-        return self.__dict__
+        print(self.symbol + " on " + str(self.pos) + ".")
+        print("In-bound moves: " + str(list(self.ib_moves[0:self.ib_moves.len])))
+        print("Unobstructed moves: " + str(list(self.uo_moves[0:self.uo_moves.len])))
+        print("Valid moves: " + str(list(self.v_moves[0:self.v_moves.len])))
+        print("Move history: " + str(list(self.hist[0:self.hist.len])))
+        print("Backed up by: " + str(list(self.backups[0:self.backups.len])))
+        print("Backing up: " + str(list(self.backing_up[0:self.backing_up.len])))
+        print("Targeting: " + str(list(self.targets[0:self.targets.len])))
+        print("Targeted by: " + str(list(self.threats[0:self.threats.len])))
         
     def get_dest(self, x_diff, y_diff):
         """Returns destination given some difference from the orig. position"""
@@ -202,9 +210,9 @@ class Piece():
                     range(1,8) if self.x + i < 8 and self.y - i > -1}
         se_dests = {'se_' + str(i): (self.x + i, self.y + i) for i in 
                     range(1,8) if self.x + i < 8 and self.y + i < 8}
-        sw_dests = {'ne_' + str(i): (self.x - i, self.y + i) for i in 
+        sw_dests = {'sw_' + str(i): (self.x - i, self.y + i) for i in 
                     range(1,8) if self.x - i > -1 and self.y + i < 8}
-        nw_dests = {'ne_' + str(i): (self.x - i, self.y - i) for i in 
+        nw_dests = {'nw_' + str(i): (self.x - i, self.y - i) for i in 
                     range(1,8) if self.x - i > -1 and self.y - i > -1}
         moves = {**ne_dests, **se_dests, **sw_dests, **nw_dests}
         [self.ib_moves.add((move, *dest)) for move, dest in moves.items()]
@@ -240,6 +248,7 @@ class Piece():
     
     def get_ib_moves(self):
         """Gets all in-bound moves for a piece based on the piece type."""
+        self.ib_moves.reset()
         move_dict = {
         'pawn':self.get_pawn_ib_moves,
         'rook':self.get_rook_ib_moves,
@@ -310,10 +319,6 @@ class Chessboard:
             df.index = [1, 2, 3, 4, 5, 6, 7, 8]
             df.columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         return df
-    
-    def ascii(self):
-        """Returns color-coded ascii-printed view of board."""
-        
         
     def get_pieces(self, piece_type=[], color=[]):
         """Returns a list of pieces meeting the parameters (and, not or).
@@ -351,7 +356,6 @@ class Chessboard:
         populated based on which moves have no pieces between it and dest.
         Knight/King/Pawn will always have the same ib_moves and uo_moves."""
         for piece in self.alive:
-            piece.uo_moves.reset()
             if piece.type in ['pawn', 'knight', 'king']:
                 for move, x, y in piece.ib_moves:
                     piece.uo_moves.add((move, x, y))
@@ -427,7 +431,6 @@ class Chessboard:
         'king':self.get_valid_other_moves
         }
         for piece in self.alive:
-            piece.v_moves.reset()
             move_dict[piece.type](piece)
 
     def are_squares_safe(self, square_list, color):
@@ -463,31 +466,17 @@ class Chessboard:
                 square_list = [self[sq_x, y] for sq_x in sqs]
                 if self.are_squares_safe(square_list, color):
                     k.v_moves.add((move, sqs[0], y))
-                    
-#    def analyze_board(self):
-#        """Identify threats, backups, etc. given the board state."""
-#        for piece in self.alive:
-#            for move, x, y in piece.v_moves:
-#                square = self[x,y]
-#                if piece.color == 'white':
-#                    square.w_thrts.add((piece.type, piece.x, piece.y))
-#                elif piece.color == 'black':
-#                    square.b_thrts.add((piece.type, piece.x, piece.y))
-#                occ = square.occ
-#                if not occ:
-#                    continue
-#                if occ.color == piece.color:
-#                    occ.
-#                    
-#                
-#                if 
-#                
-#                
+    
+    def reset_info(self):
+        """Resets most information about the board's pieces."""
+        for piece in self.alive:
+            piece.uo_moves.reset() 
+            piece.v_moves.reset() 
+            piece.backups.reset() 
+            piece.backing_up.reset()
+            piece.targets.reset()
+            piece.threats.reset()
                 
-                
-                occ = square.occ
-                
-                    
     def full_set_up(self, mode="standard"):
         """Set up board and generate all valid moves. Mode can be "random"."""
         if mode == "standard":
@@ -503,12 +492,13 @@ class Chessboard:
   
     def move_piece(self, piece, dest, validate=True):
         """Move piece, potentially capture, and update all values."""
-        # Get move name
-        move = piece.v_moves.filt([('x',dest[0]),('y',dest[1])])[0][0]
         # Validate move
         if validate:
+            assert piece
             assert dest in [(x, y) for move, x, y in piece.v_moves]
             assert piece.color == self.turn
+        # Get move name
+        move = piece.v_moves.filt([('x',dest[0]),('y',dest[1])])[0][0]
         # Format print statement
         if self.disp_mode == 'chess': # Format destination to be chess-style
             dest_string = lookup_dict[dest].replace('_',"").upper()
@@ -519,7 +509,7 @@ class Chessboard:
         if dest_piece: # Handle capture
             statement = statement + dest_piece.symbol + " has been captured!"
             self.graveyard.append(dest_piece)
-            self.board.alive.remove(dest_piece)
+            self.alive.remove(dest_piece)
             dest_piece.status = 'dead'
             dest_piece.killed_by = piece
             piece.kill_list += [dest_piece]
@@ -550,6 +540,7 @@ class Chessboard:
         # Update in-bound moves for moved pieces
         [lm_piece.get_ib_moves() for lm_piece in self.last_moved]
         # Update board
+        self.reset_info()
         self.get_unobstructed_moves()
         self.get_valid_moves()
         self.get_valid_castles()
@@ -562,10 +553,34 @@ class Chessboard:
 ########################### Let's play chess! ###############################
 #############################################################################
             
-cboard = Chessboard(disp_mode = 'chess')
+cboard = Chessboard(disp_mode = 'numpy')
 cboard.full_set_up()
 cboard.move_piece(cboard[4,6].occ, (4,4), validate=True)
 cboard.move_piece(cboard[1,1].occ, (1,3), validate=True)
+cboard[1,3].occ.info()
+cboard[5,7].occ.info()
+cboard.move_piece(cboard[5,7].occ, (1,3), validate=True)
+cboard.move_piece(cboard[6,0].occ, (5,2), validate=True)
+cboard[4,4].occ.info()
+cboard.move_piece(cboard[4,4].occ, (4,3), validate=True)
+cboard[4,3].occ.info()
+cboard[5,2].occ.info()
+cboard.view()
+cboard.move_piece(cboard[2,0].occ, (1,1), validate=True)
+cboard.move_piece(cboard[4,3].occ, (5,2), validate=True)
+cboard[1,1].occ.info()
+cboard.move_piece(cboard[1,1].occ, (6,6), validate=True)
+cboard[3,6].occ.info()
+cboard[2,7].occ.info()
+cboard.move_piece(cboard[5,2].occ, (4,1), validate=True)
+cboard.move_piece(cboard[3,0].occ, (4,1), validate=True)
+cboard.move_piece(cboard[6,7].occ, (4,6), validate=True)
+# castle?
+cboard[4,7].occ.info()
+# Correctly says we cannot castle.
+cboard.move_piece(cboard[6,6].occ, (7,7), validate=True)
+cboard.move_piece(cboard[1,7].occ, (2,5), validate=True)
+cboard.move_piece(cboard[0,1].occ, (0,2), validate=True)
 
 pretty_board(cboard)
 
