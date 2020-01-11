@@ -9,6 +9,7 @@ Some classes for setting up a simple chess-bot.
 import numpy as np
 import pandas as pd
 from random import sample
+from pretty_board import pretty_board
 
 
 # Define Constants
@@ -135,15 +136,24 @@ class Piece():
         
     def info(self):
         """Gets attributes for the piece"""
-        print(self.symbol + " on " + str(self.pos) + ".")
-        print("In-bound moves: " + str(list(self.ib_moves[0:self.ib_moves.len])))
-        print("Unobstructed moves: " + str(list(self.uo_moves[0:self.uo_moves.len])))
-        print("Valid moves: " + str(list(self.v_moves[0:self.v_moves.len])))
-        print("Move history: " + str(list(self.hist[0:self.hist.len])))
-        print("Backed up by: " + str(list(self.backups[0:self.backups.len])))
-        print("Backing up: " + str(list(self.backing_up[0:self.backing_up.len])))
-        print("Targeting: " + str(list(self.targets[0:self.targets.len])))
-        print("Targeted by: " + str(list(self.threats[0:self.threats.len])))
+        
+        def ti(tuple_list):
+            """takes a tuple turns it into a tuple with a7 style indexing"""
+            new_list = []
+            for i, j, k in tuple_list:
+                new_pos = lookup_dict[(j, k)].split('_')
+                new_list += [(i, new_pos[0].upper()+str(new_pos[1]))]
+            return new_list
+        
+        new_pos = "".join(lookup_dict[self.pos].split('_')).upper()
+        print(self.symbol + " on " + new_pos + ".")
+        print("Valid moves: " + str(ti(self.v_moves)))
+        print("Move history: " + str(ti(self.hist)))
+        print("Backed up by: " + str(ti(self.backups)))
+        print("Backing up: " + str(ti(self.backing_up)))
+        print("Targeting: " + str(ti(self.targets)))
+        print("Targeted by: " + str(ti(self.threats)))
+        print("Killed: " + str(self.kill_list))
         
     def get_dest(self, x_diff, y_diff):
         """Returns destination given some difference from the orig. position"""
@@ -235,7 +245,7 @@ class Piece():
 class Chessboard:
     """A class used to hold squares and pieces as well as help those objects 
     understand their surroundings. Also handles moves."""
-    def __init__(self, turn='white', disp_mode = "numpy"):
+    def __init__(self, turn='white', player_color = 'white'):
         flipper = 0 # flips between 0 and 1 each iteration
         row_list = []
         for y in range(8):
@@ -246,12 +256,13 @@ class Chessboard:
                 flipper = flipper * -1 + 1
             row_list = row_list + [square_list]
         self.board = np.array(row_list)
-        self.disp_mode = disp_mode
         self.turn = turn
         self.nonturn = 'black' if turn == 'white' else 'white'
         self.turn_num = 1
         self.alive = []
         self.graveyard = []
+        self.player_color = player_color
+        self.move_history = []
         
     def __getitem__(self, tup):
         return self.board[tup[1],tup[0]]
@@ -276,21 +287,9 @@ class Chessboard:
             self[pos].occ=Piece(color,piece,pos[0],pos[1])
             self[pos].occ.has_moved = True
     
-    def view(self, mode='numpy'):
+    def view(self):
         """Returns nice-looking view of board. Not used in calculations."""
-        df = pd.DataFrame(index=range(8), columns=range(8))
-        for pos in [(x, y) for x in range(8) for y in range(8)]:
-            occ = self[pos].occ
-            if occ and occ.status == 'alive':
-                df.loc[pos[::-1]] = self[pos].occ.symbol
-            else:
-                df.loc[pos[::-1]] = ''
-        if mode == 'numpy':
-            return df
-        elif mode == 'chess':
-            df.index = [1, 2, 3, 4, 5, 6, 7, 8]
-            df.columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        return df
+        pretty_board(self)
         
     def get_pieces(self, piece_type=[], color=[]):
         """Returns a list of pieces meeting the parameters (and, not or).
@@ -460,7 +459,6 @@ class Chessboard:
         self.get_unobstructed_moves()
         self.get_valid_moves()
         self.get_valid_castles()
-        return self.view()
   
     def move_piece(self, piece, dest, validate=True):
         """Move piece, potentially capture, and update all values."""
@@ -472,18 +470,22 @@ class Chessboard:
         # Get move name
         move = piece.v_moves.filt([('x',dest[0]),('y',dest[1])])[0][0]
         # Format print statement
-        if self.disp_mode == 'chess': # Format destination to be chess-style
-            dest_string = lookup_dict[dest].replace('_',"").upper()
-        else:
-            dest_string = str(dest)
-        statement = "Moved " + piece.symbol + " to " + dest_string + ". "
+        origin_string = lookup_dict[piece.pos].replace('_',"").upper()
+        dest_string = lookup_dict[dest].replace('_',"").upper()
+        statement = "Moved " + piece.symbol + " from " + origin_string + \
+                    " to " + dest_string + ". "
         dest_piece = self[dest].occ
+        capture = 0
         if dest_piece: # Handle capture
+            capture = 1
             statement = statement + dest_piece.symbol + " has been captured!"
             self.graveyard.append(dest_piece)
             self.alive.remove(dest_piece)
+            self.move_history += [piece.symbol + ' ' + origin_string + ' > ' \
+                                  + dest_string + ': ' + dest_piece.symbol \
+                                  + " captured."]
             dest_piece.status = 'dead'
-            dest_piece.killed_by = piece
+            dest_piece.killed_by = piece.symbol
             piece.kill_list += [dest_piece]
         # Update board information
         self[piece.pos].occ = None
@@ -491,6 +493,8 @@ class Chessboard:
         self.turn, self.nonturn = self.nonturn, self.turn
         self.turn_num += 1
         self.last_moved = [piece]
+        self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
+                              dest_string + ': No capture.']
         # Update piece information
         piece.x, piece.y = dest
         piece.pos = dest
@@ -517,6 +521,5 @@ class Chessboard:
         self.get_valid_moves()
         self.get_valid_castles()
         # Display
-        if self.disp_mode != "none":
-            print(statement)
-            return self.view(mode=self.disp_mode)
+        print(statement)
+        return self.view()
