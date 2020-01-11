@@ -1,0 +1,6 @@
+TO DO:
+
+1. Allow bot to play itself. Set up a second simulate script with alternate
+parameters. This way we can optimize the parameters!
+
+2. Improve the stats printout to show how the scoring works. 

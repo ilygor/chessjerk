@@ -12,7 +12,7 @@ from pretty_board import pretty_board
 from classes import Chessboard
 
 # Define constants        
-wait = 0 # Amount of time to wait between printouts. Good for comedy and drama.
+wait = 2 # Amount of time to wait between printouts. Good for comedy and drama.
 letter_list = ['a','b','c','d','e','f','g','h']
 
 # Useful functions
@@ -91,7 +91,7 @@ print("You have chosen " + color + "!\n\n")
 sleep(wait)
 
 # Begin game
-cboard = Chessboard()
+cboard = Chessboard(player_color = color)
 cboard.full_set_up()
 print("The game is afoot! You can always say 'help' for help, or 'quit' to "
       "quit.")
@@ -106,6 +106,7 @@ sleep(int(wait/2))
 print("2")
 sleep(int(wait/2))
 print("1")
+sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
 pretty_board(cboard)
 print("It is white's turn to play.")
@@ -113,59 +114,64 @@ print("It is white's turn to play.")
 # Game loop
 fails = 0
 while True:
-    if fails == 0:
-        move = input("\nEnter a move, 'help', or 'quit': ")
-    if move == 'quit':
-        quit()
-    elif move == 'help':
-        info = ("I figured you'd probably need help. Here are some of the "
-                "things you can do, besides lose.\n\n"
-                "quit\t-\tQuits the game, like the pathetic quitter you are.\n"
-                "help\t-\tYou should already know what this does.\n"
-                "info a1\t-\tGives information about the piece on a1.\n"
-                "stats\t-\tGives statistics about the game.\n"      
-                "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
-                )
-        print(info)
-    elif move == 'stats':
-        gy_black = []
-        gy_white = []
-        if len(cboard.graveyard) == 0:
-            print("No pieces captured yet.")
-        else:
-            for piece in cboard.graveyard:
-                if piece.color == 'black':
-                    gy_black += piece
-                else:
-                    gy_white += piece
-                print("White has captured " + len(gy_black) + " black pieces.")
-                for i in gy_black:
-                    print(i.symbol + " captured by " + i.killed_by.symbol)
-                print("Black has captured " + len(gy_white) + " black pieces.")
-                for i in gy_white:
-                    print(i.symbol + " captured by " + i.killed_by.symbol)
-        print("Other stats coming soon.")
-    elif ' ' in move and move.split(' ')[0] == 'info':
-        try:
-            position = interpret_string(move.split(' ')[1])
-            occ = cboard[position].occ
-            if occ:
-                occ.info()
+    if cboard.turn == color:
+        if fails == 0:
+            move = input("\nEnter a move, 'help', or 'quit': ")
+        if move == 'quit':
+            quit()
+        elif move == 'help':
+            info = ("I figured you'd probably need help. Here are some of the "
+                    "things you can do, besides lose.\n\n"
+                    "quit\t-\tQuits the game, like the pathetic quitter you are.\n"
+                    "help\t-\tYou should already know what this does.\n"
+                    "info a1\t-\tGives information about the piece on a1.\n"
+                    "stats\t-\tGives statistics about the game.\n"      
+                    "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
+                    )
+            print(info)
+        elif move == 'stats':
+            gy_black = []
+            gy_white = []
+            if len(cboard.graveyard) == 0:
+                print("No pieces captured yet.")
             else:
-                print("There's no piece there... use your head.")
-        except:
+                for piece in cboard.graveyard:
+                    if piece.color == 'black':
+                        gy_black += piece
+                    else:
+                        gy_white += piece
+                    print("White has captured " + len(gy_black) + " black pieces.")
+                    for i in gy_black:
+                        print(i.symbol + " captured by " + i.killed_by.symbol)
+                    print("Black has captured " + len(gy_white) + " black pieces.")
+                    for i in gy_white:
+                        print(i.symbol + " captured by " + i.killed_by.symbol)
+            print("Other stats coming soon.")
+        elif ' ' in move and move.split(' ')[0] == 'info':
+            try:
+                position = interpret_string(move.split(' ')[1])
+                occ = cboard[position].occ
+                if occ:
+                    occ.info()
+                else:
+                    print("There's no piece there... use your head.")
+            except:
+                print("Invalid input.")
+        elif ' ' in move:
+            try:
+                piece = interpret_string(move.split(' ')[0])
+                dest = interpret_string(move.split(' ')[1])
+                cboard.move_piece(cboard[piece].occ, (dest), True)
+            except AssertionError:
+                print("Invalid move.")
+                fails += 1
+        else:
             print("Invalid input.")
-    elif ' ' in move:
-        try:
-            piece = interpret_string(move.split(' ')[0])
-            dest = interpret_string(move.split(' ')[1])
-            cboard.move_piece(cboard[piece].occ, (dest), True)
-        except AssertionError:
-            print("Invalid move.")
             fails += 1
     else:
-        print("Invalid input.")
-        fails += 1
+        print("My turn. :)")
+        sleep(int(wait/2))
+        print("Let me think...")
         
         
         
