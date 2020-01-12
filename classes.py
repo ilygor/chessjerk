@@ -287,9 +287,9 @@ class Chessboard:
             self[pos].occ=Piece(color,piece,pos[0],pos[1])
             self[pos].occ.has_moved = True
     
-    def view(self):
+    def view(self, black_first = False):
         """Returns nice-looking view of board. Not used in calculations."""
-        pretty_board(self)
+        pretty_board(self, black_first)
         
     def get_pieces(self, piece_type=[], color=[]):
         """Returns a list of pieces meeting the parameters (and, not or).
@@ -327,7 +327,7 @@ class Chessboard:
         populated based on which moves have no pieces between it and dest.
         Knight/King/Pawn will always have the same ib_moves and uo_moves."""
         for piece in self.alive:
-            if piece.type in ['pawn', 'knight', 'king']:
+            if piece.type in ['knight', 'king']:
                 for move, x, y in piece.ib_moves:
                     piece.uo_moves.add((move, x, y))
             else:
@@ -369,8 +369,8 @@ class Chessboard:
                         neighbor.hist.len == 1 and 
                         '2' in list(iter(neighbor.hist))[0][0]):
                         piece.v_moves.add((move, x, y))
-                        piece.targets.add((occ.type, x, y))
-                        occ.threats.add((piece.type, piece.x, piece.y))
+                        piece.targets.add((neighbor.type, x, y))
+                        neighbor.threats.add((piece.type, piece.x, piece.y))
                         
     def get_valid_other_moves(self, piece):
         "Get legal moves for rooks excluding castles."""
@@ -460,7 +460,7 @@ class Chessboard:
         self.get_valid_moves()
         self.get_valid_castles()
   
-    def move_piece(self, piece, dest, validate=True):
+    def move_piece(self, piece, dest, validate=True, printer = False):
         """Move piece, potentially capture, and update all values."""
         # Validate move
         if validate:
@@ -502,17 +502,17 @@ class Chessboard:
         # Handle castling
         if move == 'c_k' or move == 'c_q':
             if move == 'c_k':
-                print("Kingside castle!")
+                if printer: print("Kingside castle!")
                 rook = self[7, piece.y].occ
                 new_dest = (5, piece.y)
             elif move == 'c_q':
-                print("Queenside castle!")
+                if printer: print("Queenside castle!")
                 rook = self[0, piece.y].occ
                 new_dest = (3, piece.y)
             self.last_moved += [rook]
             self.turn, self.nonturn = self.nonturn, self.turn
             self.turn_num -= 1
-            self.move_piece(rook, new_dest, False, 'none')
+            self.move_piece(rook, new_dest, False, False)
         # Update in-bound moves for moved pieces
         [lm_piece.get_ib_moves() for lm_piece in self.last_moved]
         # Update board
@@ -521,5 +521,9 @@ class Chessboard:
         self.get_valid_moves()
         self.get_valid_castles()
         # Display
-        print(statement)
-        return self.view()
+        if printer:
+            print(statement)
+            if self.player_color == 'black':
+                return self.view(True)
+            else:
+                return self.view()

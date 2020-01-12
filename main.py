@@ -10,9 +10,10 @@ import os
 # Import modules
 from pretty_board import pretty_board
 from classes import Chessboard
+from simulate import Simulator
 
 # Define constants        
-wait = 2 # Amount of time to wait between printouts. Good for comedy and drama.
+wait = 0 # Amount of time to wait between printouts. Good for comedy and drama.
 letter_list = ['a','b','c','d','e','f','g','h']
 
 # Useful functions
@@ -108,14 +109,17 @@ sleep(int(wait/2))
 print("1")
 sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
-pretty_board(cboard)
+if color == 'white':
+    pretty_board(cboard)
+else:
+    pretty_board(cboard, True)
 print("It is white's turn to play.")
 
 # Game loop
 fails = 0
 while True:
     if cboard.turn == color:
-        if fails == 0:
+        if True:
             move = input("\nEnter a move, 'help', or 'quit': ")
         if move == 'quit':
             quit()
@@ -137,13 +141,13 @@ while True:
             else:
                 for piece in cboard.graveyard:
                     if piece.color == 'black':
-                        gy_black += piece
+                        gy_black += [piece]
                     else:
-                        gy_white += piece
-                    print("White has captured " + len(gy_black) + " black pieces.")
+                        gy_white += [piece]
+                    print("White has captured " + str(len(gy_black)) + " black pieces.")
                     for i in gy_black:
                         print(i.symbol + " captured by " + i.killed_by.symbol)
-                    print("Black has captured " + len(gy_white) + " black pieces.")
+                    print("Black has captured " + str(len(gy_white)) + " black pieces.")
                     for i in gy_white:
                         print(i.symbol + " captured by " + i.killed_by.symbol)
             print("Other stats coming soon.")
@@ -161,7 +165,7 @@ while True:
             try:
                 piece = interpret_string(move.split(' ')[0])
                 dest = interpret_string(move.split(' ')[1])
-                cboard.move_piece(cboard[piece].occ, (dest), True)
+                cboard.move_piece(cboard[piece].occ, (dest), True, True)
             except AssertionError:
                 print("Invalid move.")
                 fails += 1
@@ -169,9 +173,12 @@ while True:
             print("Invalid input.")
             fails += 1
     else:
+        sim = Simulator(cboard)
         print("My turn. :)")
         sleep(int(wait/2))
         print("Let me think...")
+        orig, dest = sim.multi_level_simulate()
+        cboard.move_piece(cboard[orig].occ, (dest), True, True)
         
         
         
