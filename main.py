@@ -146,10 +146,10 @@ while True:
                         gy_white += [piece]
                     print("White has captured " + str(len(gy_black)) + " black pieces.")
                     for i in gy_black:
-                        print(i.symbol + " captured by " + i.killed_by.symbol)
+                        print(i.symbol + " captured by " + i.killed_by)
                     print("Black has captured " + str(len(gy_white)) + " black pieces.")
                     for i in gy_white:
-                        print(i.symbol + " captured by " + i.killed_by.symbol)
+                        print(i.symbol + " captured by " + i.killed_by)
             print("Other stats coming soon.")
         elif ' ' in move and move.split(' ')[0] == 'info':
             try:
@@ -161,10 +161,12 @@ while True:
                     print("There's no piece there... use your head.")
             except:
                 print("Invalid input.")
+                fails += 1
         elif ' ' in move:
             try:
                 piece = interpret_string(move.split(' ')[0])
                 dest = interpret_string(move.split(' ')[1])
+                # Implement check check and mate check
                 cboard.move_piece(cboard[piece].occ, (dest), True, True)
             except AssertionError:
                 print("Invalid move.")

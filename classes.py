@@ -348,7 +348,7 @@ class Chessboard:
                 piece.v_moves.add((move, x, y))
             # Advance Two Spaces
             elif move.split('_')[-1] == '2' and piece.hist.len == 0:
-                piece.v_moves.add((move, x, y))
+                if not self[x, y].occ: piece.v_moves.add((move, x, y))
             elif len(move) == 4: # Only look at diagonal moves which have len 4
                 occ = self[x, y].occ
                 # Attacks
