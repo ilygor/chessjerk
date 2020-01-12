@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 """
-Logic for simulating and scoring moves.
+Logic for simulating and scoring moves. This is the ugliest module, and most
+in need of refactoring. That said, it works and is still readable.
 """
 
 # Imports
@@ -148,8 +149,9 @@ class Simulator:
         all moves again. For each move1, looks at the worst case scenario based
         on moves 2 and 3. Chooses the move 1 with the best worst-case scenario.
         """
-        df = self.simulate() # Looking at available moves
+        df = self.simulate() # Looking at available moves for round 1
         sub_df_list = []
+        # For each move in round 1, "make" the move and score it.
         for i in range(self.gen1):
             temp_board_1 = c.deepcopy(self.board)
             temp_board_1.move_piece(temp_board_1[df.loc[i,'orig']].occ,
@@ -157,6 +159,7 @@ class Simulator:
                                     True, False)
             sim_1 = Simulator(temp_board_1)
             sub_df = sim_1.simulate()
+            # Bring in m1 values alongisde the m2 values already in sub_df
             sub_df['m1_orig'] = [df.loc[i,'orig']] * sub_df.shape[0]
             sub_df['m1_dest'] = [df.loc[i,'dest']] * sub_df.shape[0]
             sub_df['m1_score'] = [df.loc[i,'score']] * sub_df.shape[0]
@@ -173,6 +176,8 @@ class Simulator:
                               new_df["m1_dest"].map(str)
         move1 = new_df.m1_concat.unique().tolist()
         gen2_list = []
+        # Repeat the process. We make the first and second moves, score the 
+        # third with simulate() and bring back the old information.
         for i in move1:
             filt = new_df.loc[new_df.m1_concat == i,:].reset_index(drop=True)
             for j in range(self.gen2):
@@ -205,7 +210,7 @@ class Simulator:
                 sub_df2['m1_backup_score'] = [filt.loc[j,'m1_backup_score']] * sub_df2.shape[0]
                 gen2_list += [sub_df2]
         gen2_df = pd.concat(gen2_list, axis=0).reset_index(drop=True)
-        # Interpret the results
+        # Interpret the results. We want the move with the best worst-case scen.
         gen2_df['m1_concat'] = gen2_df["m1_orig"].map(str) + \
                        gen2_df["m1_dest"].map(str)
         gen2_df['m2_concat'] = gen2_df["m2_orig"].map(str) + \
