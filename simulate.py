@@ -19,7 +19,7 @@ pvals = {'pawn':1,
         'knight':3,
         'rook':5,
         'queen':9, 
-        'king':9}
+        'king':15}
 
 # Top level functions;
 def score_position(board, printer=True):
@@ -102,10 +102,10 @@ def score_position(board, printer=True):
 
 
 class Simulator:
-    def __init__(self, cboard):
+    def __init__(self, cboard, gen1 = 3, gen2 = 2):
         self.n = 50 # max moves to consider
-        self.gen1 = 6 # moves to go forward with if good
-        self.gen2 = 3
+        self.gen1 = gen1 # moves to go forward with if good
+        self.gen2 = gen2
         self.board = c.deepcopy(cboard)
 
     def get_all_moves(self):

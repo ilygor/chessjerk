@@ -11,9 +11,8 @@ import pandas as pd
 from random import sample
 from pretty_board import pretty_board
 
-
 # Define Constants
-color_list = ['black', 'white']
+color_list = ['white', 'black']
 pawn_dir = dict(zip(color_list, [1, -1]))
 x_index = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
 y_index = [1, 2, 3, 4, 5, 6, 7, 8]
@@ -120,7 +119,6 @@ class Piece():
         self.symbol = color[0].upper() + "_" + piece_type.title()
         self.kill_list = []
         self.killed_by = None
-        self.last_moved = [] # List in case of castling
         
         self.ib_moves = CustArray('ib_moves')
         self.uo_moves = CustArray('uo_moves')
@@ -162,7 +160,7 @@ class Piece():
     def get_pawn_ib_moves(self):
         """All possible in-bounds moves for pawn. Includes en passant."""
         assert self.type == "pawn"
-        p_num, p_dir = (1, 's') if self.color == 'black' else (-1, 'n')
+        p_num, p_dir = (-1, 's') if self.color == 'black' else (1, 'n')
         moves = {
             p_dir + '_1': self.get_dest(0, p_num),
             p_dir + '_2': self.get_dest(0, p_num * 2),
@@ -287,9 +285,9 @@ class Chessboard:
             self[pos].occ=Piece(color,piece,pos[0],pos[1])
             self[pos].occ.has_moved = True
     
-    def view(self, black_first = False):
+    def view(self, reverse = False):
         """Returns nice-looking view of board. Not used in calculations."""
-        pretty_board(self, black_first)
+        pretty_board(self, reverse)
         
     def get_pieces(self, piece_type=[], color=[]):
         """Returns a list of pieces meeting the parameters (and, not or).
@@ -460,7 +458,8 @@ class Chessboard:
         self.get_valid_moves()
         self.get_valid_castles()
   
-    def move_piece(self, piece, dest, validate=True, printer = False):
+    def move_piece(self, piece, dest, validate=True, printer = False, 
+                   human=True):
         """Move piece, potentially capture, and update all values."""
         # Validate move
         if validate:
@@ -475,9 +474,7 @@ class Chessboard:
         statement = "Moved " + piece.symbol + " from " + origin_string + \
                     " to " + dest_string + ". "
         dest_piece = self[dest].occ
-        capture = 0
         if dest_piece: # Handle capture
-            capture = 1
             statement = statement + dest_piece.symbol + " has been captured!"
             self.graveyard.append(dest_piece)
             self.alive.remove(dest_piece)
@@ -492,13 +489,13 @@ class Chessboard:
         self[dest].occ = piece
         self.turn, self.nonturn = self.nonturn, self.turn
         self.turn_num += 1
-        self.last_moved = [piece]
         self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
                               dest_string + ': No capture.']
         # Update piece information
         piece.x, piece.y = dest
         piece.pos = dest
         piece.hist.add((piece.v_moves.filt([('x',dest[0]),('y',dest[1])])))
+        piece.get_ib_moves()
         # Handle castling
         if move == 'c_k' or move == 'c_q':
             if move == 'c_k':
@@ -509,12 +506,34 @@ class Chessboard:
                 if printer: print("Queenside castle!")
                 rook = self[0, piece.y].occ
                 new_dest = (3, piece.y)
-            self.last_moved += [rook]
             self.turn, self.nonturn = self.nonturn, self.turn
             self.turn_num -= 1
             self.move_piece(rook, new_dest, False, False)
-        # Update in-bound moves for moved pieces
-        [lm_piece.get_ib_moves() for lm_piece in self.last_moved]
+        # Handle pawn promotion
+        if piece.type == 'pawn' and dest[1] in [0, 7]:
+            if human == False:
+                promotion = 'queen'
+            else:
+                promotion = input("Pawn promotion! What piece would you like? "
+                              "Enter the name of the piece \nyou want, such "
+                              "as 'queen' or 'knight' without quotes: ")
+            if promotion.lower() == 'quit':
+                quit()
+            elif promotion.lower() in ['queen', 'rook', 'knight', 'bishop']:
+                invalid_type = False
+            else:
+                invalid_type = True
+            while invalid_type:
+                promotion = input("Try again. Name the type of piece you want "
+                                  "your pawn to be promoted to.")
+                if promotion.lower() == 'quit':
+                    quit()
+                elif promotion.lower() in ['queen', 'rook', 'knight', 'bishop']:
+                    invalid_type = False
+            new_queen = Piece(piece.color, promotion, piece.x, piece.y)
+            self[piece.x, piece.y].occ = new_queen
+            new_queen.get_ib_moves()
+            del piece
         # Update board
         self.reset_info()
         self.get_unobstructed_moves()
@@ -536,4 +555,4 @@ class Chessboard:
             if self.player_color == 'black':
                 return check, self.view(True)
             else:
-                return check, self.view()
+                return check, self.view(False)

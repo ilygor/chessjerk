@@ -4,14 +4,3 @@ TO DO:
 parameters. This way we can optimize the parameters!
 
 2. Improve the stats printout to show how the scoring works. 
-
-3. Get this shitty simulate function working.
-Honestly ever since I separated everything it's such a pain to troubleshoot.
-
-I need to be able to see the dataframe from the last move. And that 
-needs to have the broken down score.
-
-implement check
-implement checkmate
-implement pawn transform
-get pawn transform into score

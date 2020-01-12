@@ -16,6 +16,18 @@ from simulate import Simulator
 # Define constants        
 wait = 0 # Amount of time to wait between printouts. Good for comedy and drama.
 letter_list = ['a','b','c','d','e','f','g','h']
+# For each difficulty how many moves to consider, and responses to consider
+difficulty_map = {
+        1: (1,1),
+        2: (2,1),
+        3: (3,1),
+        4: (2,2), 
+        5: (3,2), 
+        6: (4,2),
+        7: (5,2),
+        8: (5,3),
+        9: (6,3),
+        }
 
 # Useful functions
 def interpret_string(string):
@@ -66,6 +78,8 @@ elif difficulty in ['8','9']:
     print("I'm certain you will regret your decision.\n\n")
 sleep(wait)
 
+gen1, gen2 = difficulty_map[int(difficulty)]
+
 # Color selection
 failed_color_input_count = 0
 statement = ("Now it's time to select a color. Enter 'black' or 'white' "
@@ -110,8 +124,8 @@ sleep(int(wait/2))
 print("1")
 sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
-if color == 'white':
-    pretty_board(cboard)
+if color == 'black':
+    pretty_board(cboard, False)
 else:
     pretty_board(cboard, True)
 print("It is white's turn to play.")
@@ -124,6 +138,7 @@ while True:
     if check:
         sim = Simulator(cboard)
         df = sim.simulate()
+        print(df)
         if df.score.max() < -100:
             print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
             input("Press enter to quit.")
@@ -138,28 +153,9 @@ while True:
                     "quit\t-\tQuits the game, like the pathetic quitter you are.\n"
                     "help\t-\tYou should already know what this does.\n"
                     "info a1\t-\tGives information about the piece on a1.\n"
-                    "stats\t-\tGives statistics about the game.\n"      
                     "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
                     )
             print(info)
-        elif move == 'stats':
-            gy_black = []
-            gy_white = []
-            if len(cboard.graveyard) == 0:
-                print("No pieces captured yet.")
-            else:
-                for piece in cboard.graveyard:
-                    if piece.color == 'black':
-                        gy_black += [piece]
-                    else:
-                        gy_white += [piece]
-                    print("White has captured " + str(len(gy_black)) + " black pieces.")
-                    for i in gy_black:
-                        print(i.symbol + " captured by " + i.killed_by)
-                    print("Black has captured " + str(len(gy_white)) + " black pieces.")
-                    for i in gy_white:
-                        print(i.symbol + " captured by " + i.killed_by)
-            print("Other stats coming soon.")
         elif ' ' in move and move.split(' ')[0] == 'info':
             try:
                 position = interpret_string(move.split(' ')[1])
@@ -197,12 +193,13 @@ while True:
             print("Invalid input.")
             fails += 1
     else:
-        sim = Simulator(cboard)
+        sim = Simulator(cboard, gen1, gen2)
         print("My turn. :)")
         sleep(int(wait/2))
         print("Let me think...")
         orig, dest = sim.multi_level_simulate()
-        check, dummy = cboard.move_piece(cboard[orig].occ, (dest), True, True)
+        check, dummy = cboard.move_piece(cboard[orig].occ, 
+                                         (dest), True, True, False)
         
         
         
