@@ -6,6 +6,7 @@
 # Import packages
 from time import sleep
 import os
+import pandas as pd
 
 # Import modules
 from pretty_board import pretty_board
@@ -116,11 +117,19 @@ else:
 print("It is white's turn to play.")
 
 # Game loop
+df = 0
 fails = 0
+check = False
 while True:
+    if check:
+        sim = Simulator(cboard)
+        df = sim.simulate()
+        if df.score.max() < -100:
+            print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
+            input("Press enter to quit.")
+            quit()
     if cboard.turn == color:
-        if True:
-            move = input("\nEnter a move, 'help', or 'quit': ")
+        move = input("\nEnter a move, 'help', or 'quit': ")
         if move == 'quit':
             quit()
         elif move == 'help':
@@ -166,9 +175,22 @@ while True:
             try:
                 piece = interpret_string(move.split(' ')[0])
                 dest = interpret_string(move.split(' ')[1])
-                # Implement check check and mate check
-                cboard.move_piece(cboard[piece].occ, (dest), True, True)
-            except AssertionError:
+                if check:
+                    try: 
+                        score = df.loc[(df.orig==piece) & 
+                                       (df.dest==dest),
+                                       'score'].values[0]
+                        if score < -100:
+                            print("Still in check! Try another move.")
+                        else:
+                            check, dummy = cboard.move_piece(cboard[piece].occ, 
+                                                         (dest), True, True)
+                    except Exception as e:
+                        print("Invalid move. 1")
+                else:
+                    check, dummy = cboard.move_piece(cboard[piece].occ, 
+                                                     (dest), True, True)
+            except:
                 print("Invalid move.")
                 fails += 1
         else:
@@ -180,7 +202,7 @@ while True:
         sleep(int(wait/2))
         print("Let me think...")
         orig, dest = sim.multi_level_simulate()
-        cboard.move_piece(cboard[orig].occ, (dest), True, True)
+        check, dummy = cboard.move_piece(cboard[orig].occ, (dest), True, True)
         
         
         

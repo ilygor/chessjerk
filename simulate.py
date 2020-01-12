@@ -143,7 +143,11 @@ class Simulator:
         return df.sort_values('score', ascending=False).reset_index(drop=True)
     
     def multi_level_simulate(self):
-        print("Looking at available moves.")
+        """ugly function. Looks at all moves, takes the top (self.gen1) then 
+        looks at all responses. Takes top (self.gen2) of those. Then looks at 
+        all moves again. For each move1, looks at the worst case scenario based
+        on moves 2 and 3. Chooses the move 1 with the best worst-case scenario.
+        """
         df = self.simulate() # Looking at available moves
         sub_df_list = []
         for i in range(self.gen1):

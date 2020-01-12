@@ -520,10 +520,20 @@ class Chessboard:
         self.get_unobstructed_moves()
         self.get_valid_moves()
         self.get_valid_castles()
+        # Check if in check for printing purposes
+        check = False
+        try:
+            king = self.get_pieces(['king'],[self.turn])[0]
+            if king.threats.len > 0:
+                check = True
+        except:
+            pass
         # Display
         if printer:
+            if check:
+                statement = "Check! " + statement
             print(statement)
             if self.player_color == 'black':
-                return self.view(True)
+                return check, self.view(True)
             else:
-                return self.view()
+                return check, self.view()
