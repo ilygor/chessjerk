@@ -532,6 +532,7 @@ class Chessboard:
                     invalid_type = False
             new_queen = Piece(piece.color, promotion, piece.x, piece.y)
             self[piece.x, piece.y].occ = new_queen
+            self.alive += [new_queen]
             new_queen.get_ib_moves()
             del piece
         # Update board
@@ -550,9 +551,10 @@ class Chessboard:
         # Display
         if printer:
             if check:
-                statement = "Check! " + statement
-            print(statement)
-            if self.player_color == 'black':
-                return check, self.view(True)
+                statement = "Check! " + statement           
+            if self.player_color == 'white':
+                self.view(True)
             else:
-                return check, self.view(False)
+                self.view(False)
+            print(statement)
+        return check

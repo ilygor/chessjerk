@@ -6,7 +6,6 @@
 # Import packages
 from time import sleep
 import os
-import pandas as pd
 
 # Import modules
 from pretty_board import pretty_board
@@ -107,8 +106,6 @@ print("You have chosen " + color + "!\n\n")
 sleep(wait)
 
 # Begin game
-cboard = Chessboard(player_color = color)
-cboard.full_set_up()
 print("The game is afoot! You can always say 'help' for help, or 'quit' to "
       "quit.")
 sleep(wait)
@@ -124,26 +121,34 @@ sleep(int(wait/2))
 print("1")
 sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
+cboard = Chessboard(player_color = color)
+cboard.full_set_up()
 if color == 'black':
     pretty_board(cboard, False)
 else:
     pretty_board(cboard, True)
 print("It is white's turn to play.")
 
+
 # Game loop
 df = 0
 fails = 0
 check = False
+first_loop = True
 while True:
+    if first_loop:
+        first_loop = False
+    else:
+        print("It's " + cboard.turn + "'s turn to play.")
     if check:
         sim = Simulator(cboard)
         df = sim.simulate()
-        print(df)
         if df.score.max() < -100:
             print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
             input("Press enter to quit.")
             quit()
     if cboard.turn == color:
+    #if True:
         move = input("\nEnter a move, 'help', or 'quit': ")
         if move == 'quit':
             quit()
@@ -176,15 +181,15 @@ while True:
                         score = df.loc[(df.orig==piece) & 
                                        (df.dest==dest),
                                        'score'].values[0]
-                        if score < -100:
+                        if score < -200:
                             print("Still in check! Try another move.")
                         else:
                             check, dummy = cboard.move_piece(cboard[piece].occ, 
                                                          (dest), True, True)
                     except Exception as e:
-                        print("Invalid move. 1")
+                        print("Invalid move. 1", e)
                 else:
-                    check, dummy = cboard.move_piece(cboard[piece].occ, 
+                    check = cboard.move_piece(cboard[piece].occ, 
                                                      (dest), True, True)
             except:
                 print("Invalid move.")
@@ -194,11 +199,9 @@ while True:
             fails += 1
     else:
         sim = Simulator(cboard, gen1, gen2)
-        print("My turn. :)")
-        sleep(int(wait/2))
-        print("Let me think...")
+        print("That means me. :) Let me think...")
         orig, dest = sim.multi_level_simulate()
-        check, dummy = cboard.move_piece(cboard[orig].occ, 
+        check = cboard.move_piece(cboard[orig].occ, 
                                          (dest), True, True, False)
         
         
