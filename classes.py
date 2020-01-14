@@ -22,7 +22,7 @@ for x in range(8):
     for y in range(8):
         lookup_dict[(x,y)] = x_index[x] + '_' + str(y_index[y])
         rev_lookup['_'.join([x_index[x], str(y_index[y])])] = (x,y)
-        
+
 # Define Functions
 def get_btwn(pos, new_pos):
     """Returns list of tuples between pos tuple and new_pos tuple."""
@@ -51,20 +51,20 @@ class CustArray:
         'targets': 8, # Queen and Knight can only attack 8
         'threats': 16, # 16 enemy pieces
         }
-    
+
     def __init__(self, array_type):
         n = CustArray.size_dict[array_type]
         self.array_type = array_type
         self.array = np.empty((n,),dtype=CustArray.dtype)
         self.len = 0
-        
+
     def __repr__(self):
         return repr(self.array)
-    
+
     def __iter__(self):
         self.curr_index = 0
         return self
-        
+
     def __next__(self):
         if self.curr_index < self.len:
             val = self.array[self.curr_index]
@@ -72,29 +72,29 @@ class CustArray:
             return val
         else:
             raise StopIteration
-    
+
     def add(self, obj):
         """Insert an item into next position of array."""
         self.array = np.insert(self.array, self.len, obj)
         self.len += 1
-    
+
     def reset(self):
         """Reset the array to being filled with zeros."""
         n = CustArray.size_dict[self.array_type]
         self.array = np.empty((n,),dtype=CustArray.dtype)
         self.len = 0
-    
+
     def filt(self, objs):
         """Return filtered array based on list of (field, val) tuples."""
         filt = (self.array[objs[0][0]] == objs[0][1])
         for i in objs[1:]:
             filt = (filt) & (self.array[i[0]] == i[1])
         return self.array[filt]
-    
+
     def __getitem__(self, sliced):
         return self.array[sliced]
-        
-    
+
+
 class ChessSquare:
     def __init__(self, color, x, y, occ=None):
         """Class representing game squares with info about surroundings."""
@@ -119,7 +119,7 @@ class Piece():
         self.symbol = color[0].upper() + "_" + piece_type.title()
         self.kill_list = []
         self.killed_by = None
-        
+
         self.ib_moves = CustArray('ib_moves')
         self.uo_moves = CustArray('uo_moves')
         self.v_moves = CustArray('v_moves')
@@ -128,13 +128,13 @@ class Piece():
         self.backing_up = CustArray('backing_up')
         self.targets = CustArray('targets')
         self.threats = CustArray('threats')
-        
+
     def __repr__(self):
         return self.symbol + " at " + str(self.pos)
-        
+
     def info(self):
         """Gets attributes for the piece"""
-        
+
         def ti(tuple_list):
             """takes a tuple turns it into a tuple with a7 style indexing"""
             new_list = []
@@ -142,9 +142,10 @@ class Piece():
                 new_pos = lookup_dict[(j, k)].split('_')
                 new_list += [(i, new_pos[0].upper()+str(new_pos[1]))]
             return new_list
-        
+
         new_pos = "".join(lookup_dict[self.pos].split('_')).upper()
         print(self.symbol + " on " + new_pos + ".")
+        print("\nNote: Valid moves does not consider check!")
         print("Valid moves: " + str(ti(self.v_moves)))
         print("Move history: " + str(ti(self.hist)))
         print("Backed up by: " + str(ti(self.backups)))
@@ -152,11 +153,11 @@ class Piece():
         print("Targeting: " + str(ti(self.targets)))
         print("Targeted by: " + str(ti(self.threats)))
         print("Killed: " + str(self.kill_list))
-        
+
     def get_dest(self, x_diff, y_diff):
         """Returns destination given some difference from the orig. position"""
         return self.x + x_diff, self.y + y_diff
-    
+
     def get_pawn_ib_moves(self):
         """All possible in-bounds moves for pawn. Includes en passant."""
         assert self.type == "pawn"
@@ -168,10 +169,10 @@ class Piece():
             p_dir + 'w_1': self.get_dest(-1, p_num)
             }
         # Add in-bound moves to ib_moves
-        for move, dest in moves.items(): 
+        for move, dest in moves.items():
             if max(dest) <= 7 and min(dest) >= 0: # Ensure in-bounds
                 self.ib_moves.add((move, *dest))
-    
+
     def get_rook_ib_moves(self):
         """Get all possible moves for rook (or queen) that stay in-bounds.
         Does not consider castling, which is attributed to the King."""
@@ -182,50 +183,50 @@ class Piece():
         w_moves = {'w_' + str(i): (i, self.y) for i in range(8) if i < self.x}
         moves = {**n_moves, **e_moves, **s_moves, **w_moves}
         [self.ib_moves.add((move, *dest)) for move, dest in moves.items()]
-        
+
     def get_bishop_ib_moves(self):
         """Get all possible moves for bishop (or queen) that stay in-bounds."""
         assert self.type == 'bishop' or self.type == 'queen'
-        ne_dests = {'ne_' + str(i): (self.x + i, self.y - i) for i in 
+        ne_dests = {'ne_' + str(i): (self.x + i, self.y - i) for i in
                     range(1,8) if self.x + i < 8 and self.y - i > -1}
-        se_dests = {'se_' + str(i): (self.x + i, self.y + i) for i in 
+        se_dests = {'se_' + str(i): (self.x + i, self.y + i) for i in
                     range(1,8) if self.x + i < 8 and self.y + i < 8}
-        sw_dests = {'sw_' + str(i): (self.x - i, self.y + i) for i in 
+        sw_dests = {'sw_' + str(i): (self.x - i, self.y + i) for i in
                     range(1,8) if self.x - i > -1 and self.y + i < 8}
-        nw_dests = {'nw_' + str(i): (self.x - i, self.y - i) for i in 
+        nw_dests = {'nw_' + str(i): (self.x - i, self.y - i) for i in
                     range(1,8) if self.x - i > -1 and self.y - i > -1}
         moves = {**ne_dests, **se_dests, **sw_dests, **nw_dests}
         [self.ib_moves.add((move, *dest)) for move, dest in moves.items()]
-    
+
     def get_knight_ib_moves(self):
         """Gets all possible moves for knight that stay in-bounds."""
         assert self.type == 'knight'
-        diffs = {'nne_': (1, -2), 'ene_': (2, -1), 'ese_':(2, 1), 
-                 'sse_': (1, 2), 'ssw_': (-1, 2), 'wsw_':(-2, 1), 
+        diffs = {'nne_': (1, -2), 'ene_': (2, -1), 'ese_':(2, 1),
+                 'sse_': (1, 2), 'ssw_': (-1, 2), 'wsw_':(-2, 1),
                  'wnw_': (-2, -1), 'nnw_': (-1, -2)}
         moves = {move: self.get_dest(*diff) for move, diff in diffs.items()}
         # Add in-bound moves to ib_moves
-        for move, dest in moves.items(): 
+        for move, dest in moves.items():
             if max(dest) <= 7 and min(dest) >= 0: # Ensure in-bounds
                 self.ib_moves.add((move, *dest))
-    
+
     def get_queen_ib_moves(self):
         assert self.type == 'queen'
         self.get_bishop_ib_moves()
         self.get_rook_ib_moves()
-    
+
     def get_king_ib_moves(self):
         """Gets all possible non-castle moves for king that stay in-bounds."""
         assert self.type == 'king'
-        diffs = {'n_1': (0, -1), 'ne_1': (1, -1), 'e_1':(1, 0), 
-                 'se_1': (1, 1), 's_1': (0, 1), 'sw_1':(-1, 1), 
+        diffs = {'n_1': (0, -1), 'ne_1': (1, -1), 'e_1':(1, 0),
+                 'se_1': (1, 1), 's_1': (0, 1), 'sw_1':(-1, 1),
                  'w_1': (-1, 0), 'nw_1': (-1, -1)}
         moves = {move: self.get_dest(*diff) for move, diff in diffs.items()}
         # Add in-bound moves to ib_moves
-        for move, dest in moves.items(): 
+        for move, dest in moves.items():
             if max(dest) <= 7 and min(dest) >= 0: # Ensure in-bounds
                 self.ib_moves.add((move, *dest))
-    
+
     def get_ib_moves(self):
         """Gets all in-bound moves for a piece based on the piece type."""
         self.ib_moves.reset()
@@ -237,11 +238,11 @@ class Piece():
         'queen':self.get_queen_ib_moves,
         'king':self.get_king_ib_moves
         }
-        return move_dict[self.type]()      
-        
-        
+        return move_dict[self.type]()
+
+
 class Chessboard:
-    """A class used to hold squares and pieces as well as help those objects 
+    """A class used to hold squares and pieces as well as help those objects
     understand their surroundings. Also handles moves."""
     def __init__(self, turn='white', player_color = 'white'):
         flipper = 0 # flips between 0 and 1 each iteration
@@ -261,20 +262,20 @@ class Chessboard:
         self.graveyard = []
         self.player_color = player_color
         self.move_history = []
-        
+
     def __getitem__(self, tup):
         return self.board[tup[1],tup[0]]
-        
+
     def set_up_board(self):
         """Puts pieces in starting positions."""
-        piece_list = ['rook', 'knight', 'bishop', 'queen', 
+        piece_list = ['rook', 'knight', 'bishop', 'queen',
                       'king', 'bishop', 'knight', 'rook']
         for x, piece in enumerate(piece_list):
             for y, color in zip([0, 7], color_list):
                 self[x,y].occ = Piece(color, piece, x, y)
             for y, color in zip([1, 6], color_list):
                 self[x,y].occ = Piece(color, 'pawn', x, y)
-        
+
     def set_up_board_randomly(self):
         """Puts starting pieces in randomly assigned positions. For testing."""
         full_pos_list = [(x,y) for x in range(8) for y in range(8)]
@@ -284,15 +285,15 @@ class Chessboard:
         for color, pos, piece in zip(color_list, pos_list, piece_list*2):
             self[pos].occ=Piece(color,piece,pos[0],pos[1])
             self[pos].occ.has_moved = True
-    
+
     def view(self, reverse = False):
         """Returns nice-looking view of board. Not used in calculations."""
         pretty_board(self, reverse)
-        
+
     def get_pieces(self, piece_type=[], color=[]):
         """Returns a list of pieces meeting the parameters (and, not or).
         Ex: if you provide king, queen and no color, it gets 4 pieces.
-        Ex: If you provide king, queen and white, it gets 2 pieces."""      
+        Ex: If you provide king, queen and white, it gets 2 pieces."""
         piece_list = []
         for x in range(8):
             for y in range(8):
@@ -307,7 +308,7 @@ class Chessboard:
                 if piece.type not in piece_type:
                     piece_list.remove(piece)
         return piece_list
-    
+
     def get_alive_pieces(self):
         self.alive = self.get_pieces(
             piece_type=['pawn', 'rook', 'knight','bishop', 'queen', 'king']
@@ -336,7 +337,7 @@ class Chessboard:
                             add = False
                             break
                     if add: piece.uo_moves.add((move, x, y))
-                            
+
     def get_valid_pawn_moves(self, piece):
         """Get legal moves for pawns including en passant."""
         assert piece.type == 'pawn'
@@ -363,13 +364,13 @@ class Chessboard:
                     # Identify east/west neighbor in attack direction
                     neighbor = self[x, piece.y].occ
                     if (neighbor and neighbor.color != piece.color and
-                        neighbor.type == 'pawn' and 
-                        neighbor.hist.len == 1 and 
+                        neighbor.type == 'pawn' and
+                        neighbor.hist.len == 1 and
                         '2' in list(iter(neighbor.hist))[0][0]):
                         piece.v_moves.add((move, x, y))
                         piece.targets.add((neighbor.type, x, y))
                         neighbor.threats.add((piece.type, piece.x, piece.y))
-                        
+
     def get_valid_other_moves(self, piece):
         "Get legal moves for rooks excluding castles."""
         assert piece.type != 'pawn'
@@ -387,7 +388,7 @@ class Chessboard:
             # If square is empty
             elif not occ:
                 piece.v_moves.add((move, x, y))
-            
+
     def get_valid_moves(self):
         """Given the board's pieces', gets all legal moves for each piece.
         Does not consider pinned pieces, which are accounted for later."""
@@ -422,7 +423,7 @@ class Chessboard:
             # Loop through what ought to be the rook's matching k's color
             rooks = [self[0,y].occ, self[7,y].occ]
             safe_sqs = [[2, 3, 4], [6, 5, 4]]
-            emp_sqs = [(not self[1,y].occ and not self[2,y].occ 
+            emp_sqs = [(not self[1,y].occ and not self[2,y].occ
                        and not self[3,y].occ),
                        (not self[5,y].occ and not self[6,y].occ)]
             moves = ['c_q','c_k']
@@ -435,17 +436,17 @@ class Chessboard:
                 square_list = [self[sq_x, y] for sq_x in sqs]
                 if self.are_squares_safe(square_list, color):
                     k.v_moves.add((move, sqs[0], y))
-    
+
     def reset_info(self):
         """Resets most information about the board's pieces."""
         for piece in self.alive:
-            piece.uo_moves.reset() 
-            piece.v_moves.reset() 
-            piece.backups.reset() 
+            piece.uo_moves.reset()
+            piece.v_moves.reset()
+            piece.backups.reset()
             piece.backing_up.reset()
             piece.targets.reset()
             piece.threats.reset()
-                
+
     def full_set_up(self, mode="standard"):
         """Set up board and generate all valid moves. Mode can be "random"."""
         if mode == "standard":
@@ -457,8 +458,8 @@ class Chessboard:
         self.get_unobstructed_moves()
         self.get_valid_moves()
         self.get_valid_castles()
-  
-    def move_piece(self, piece, dest, validate=True, printer = False, 
+
+    def move_piece(self, piece, dest, validate=True, printer = False,
                    human=True):
         """Move piece, potentially capture, and update all values."""
         # Validate move
@@ -551,7 +552,7 @@ class Chessboard:
         # Display
         if printer:
             if check:
-                statement = "Check! " + statement           
+                statement = "Check! " + statement
             if self.player_color == 'white':
                 self.view(True)
             else:

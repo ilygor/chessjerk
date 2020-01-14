@@ -12,14 +12,11 @@ import pandas as pd
 import sys, os
 
 # Constants:
-n = 50 # Max number of moves to consider
-opt_moves = 6 # Optimal moves to take
-
 pvals = {'pawn':1,
         'bishop':3,
         'knight':3,
         'rook':5,
-        'queen':9, 
+        'queen':9,
         'king':15}
 
 # Top level functions;
@@ -47,7 +44,7 @@ def score_position(board, printer=True):
             tval = pvals[ttype]
             pval = pvals[piece.type]
             occ = board[x,y].occ
-            if occ and occ.backups.len > 0: 
+            if occ and occ.backups.len > 0:
                 diff = max((tval - pval), 0)
             else:
                 diff = tval
@@ -72,21 +69,21 @@ def score_position(board, printer=True):
                 center_diff += .4
             else:
                 center_diff += .1
-                
+
     # Points for pieces already captured. Checked.
     for piece in board.graveyard:
         if piece.color == board.nonturn:
             capture_diff -= pvals[piece.type] * 2
         else:
             capture_diff += pvals[piece.type] * 2
-    
+
     # Round everything to one decimal
     targeting_diff = round(targeting_diff, 1)
     targeted_diff = round(targeted_diff, 1)
     backup_diff = round(backup_diff, 1)
     center_diff = round(center_diff, 1)
     capture_diff = round(capture_diff, 1)
-    
+
     # Print
     score = (targeting_diff + targeted_diff + backup_diff + center_diff \
              + capture_diff) if not check else -1000
@@ -98,7 +95,7 @@ def score_position(board, printer=True):
         print(print_part.format("board control",str(center_diff)))
         print(print_part.format("captures",str(capture_diff)))
         print("Total score is: " + str(score))
-    return (capture_diff, center_diff, backup_diff, 
+    return (capture_diff, center_diff, backup_diff,
             targeted_diff, targeting_diff, score)
 
 
@@ -110,7 +107,7 @@ class Simulator:
         self.board = c.deepcopy(cboard)
 
     def get_all_moves(self):
-        """Get all moves for current player's turn. Returns list of tuple 
+        """Get all moves for current player's turn. Returns list of tuple
         tuples in the form of [((origin1),(dest1)),((o2),(dest2))]"""
         board = self.board
         mlist = []
@@ -120,7 +117,7 @@ class Simulator:
             mlist += [((i.pos),(i.v_moves[j][1],i.v_moves[j][2])) \
                       for j in range(i.v_moves.len)]
         return mlist
-    
+
     def simulate(self):
         """Given the current board, score all possible moves and rank them."""
         board = self.board
@@ -142,10 +139,10 @@ class Simulator:
             df.loc[i,:] = [origin, destination, score, cap, cent, targeting,
                   targeted, back]
         return df.sort_values('score', ascending=False).reset_index(drop=True)
-    
+
     def multi_level_simulate(self):
-        """ugly function. Looks at all moves, takes the top (self.gen1) then 
-        looks at all responses. Takes top (self.gen2) of those. Then looks at 
+        """ugly function. Looks at all moves, takes the top (self.gen1) then
+        looks at all responses. Takes top (self.gen2) of those. Then looks at
         all moves again. For each move1, looks at the worst case scenario based
         on moves 2 and 3. Chooses the move 1 with the best worst-case scenario.
         """
@@ -176,7 +173,7 @@ class Simulator:
                               new_df["m1_dest"].map(str)
         move1 = new_df.m1_concat.unique().tolist()
         gen2_list = []
-        # Repeat the process. We make the first and second moves, score the 
+        # Repeat the process. We make the first and second moves, score the
         # third with simulate() and bring back the old information.
         for i in move1:
             filt = new_df.loc[new_df.m1_concat == i,:].reset_index(drop=True)
@@ -243,7 +240,7 @@ class Simulator:
         final_df = pd.DataFrame({'m1_o':m1_o, 'm1_d':m1_d, 'm1_s':m1_s,
                                  'm2_o':m2_o, 'm2_d':m2_d, 'm2_s':m2_s,
                                  'm3_o':m3_o, 'm3_d':m3_d, 'm3_s':m3_s,})
-        temp = final_df.groupby(['m1_o','m1_d']).min().sort_values('m3_s', 
+        temp = final_df.groupby(['m1_o','m1_d']).min().sort_values('m3_s',
                                ascending=False).reset_index()
         gen2_df.to_csv('ai_move_analysis.csv',index=False)
         return temp.loc[0,'m1_o'], temp.loc[0,'m1_d']

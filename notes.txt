@@ -7,12 +7,6 @@ parameters. This way we can optimize the parameters!
 
 3. Fix endgame AI. It's terrible.
 
-4. Add no moving into check.
-
-5. Add stalemate.
-
 6. Just make the AI better in general.
 
 7. Fix AI pawn promotion.
-
-8. Figure out what's going on in the error when the enemy puts you in check.

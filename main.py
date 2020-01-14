@@ -12,7 +12,7 @@ from pretty_board import pretty_board
 from classes import Chessboard
 from simulate import Simulator
 
-# Define constants        
+# Define constants
 wait = 0 # Amount of time to wait between printouts. Good for comedy and drama.
 letter_list = ['a','b','c','d','e','f','g','h']
 # For each difficulty how many moves to consider, and responses to consider
@@ -20,8 +20,8 @@ difficulty_map = {
         1: (1,1),
         2: (2,1),
         3: (3,1),
-        4: (2,2), 
-        5: (3,2), 
+        4: (2,2),
+        5: (3,2),
         6: (4,2),
         7: (5,2),
         8: (5,3),
@@ -121,46 +121,72 @@ sleep(int(wait/2))
 print("1")
 sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
-cboard = Chessboard(player_color = color)
-cboard.full_set_up()
-if color == 'black':
-    pretty_board(cboard, False)
-else:
-    pretty_board(cboard, True)
-print("It is white's turn to play.")
+# cboard = Chessboard(player_color = color)
+# cboard.full_set_up()
+# if color == 'black':
+#     pretty_board(cboard, False)
+# else:
+#     pretty_board(cboard, True)
+
+
+# Custom Board Set Up for Debuging
+from classes import Piece
+cboard = Chessboard(player_color = 'black')
+cboard[0,2].occ = Piece('white', 'king', 0, 2)
+cboard[7,7].occ = Piece('black', 'king', 7, 7)
+#cboard[3,0].occ = Piece('black', 'bishop', 3, 0)
+cboard[7,3].occ = Piece('black', 'rook', 7, 3)
+cboard[7,1].occ = Piece('black', 'rook', 7, 1)
+cboard.get_alive_pieces()
+cboard.get_ib_moves()
+cboard.get_unobstructed_moves()
+cboard.get_valid_moves()
+cboard.get_valid_castles()
+pretty_board(cboard, True)
+# End custom board set up
+
 
 
 # Game loop
 df = 0
 fails = 0
 check = False
-first_loop = True
 while True:
-    if first_loop:
-        first_loop = False
-    else:
-        print("It's " + cboard.turn + "'s turn to play.")
+    sim = Simulator(cboard)
+    df = sim.simulate()
+    # Checkmate Logic
     if check:
-        sim = Simulator(cboard)
-        df = sim.simulate()
-        if df.score.max() < -100:
+        if df.score.max() < -200:
             print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
             input("Press enter to quit.")
             quit()
-    if cboard.turn == color:
-    #if True:
+    # Stalemate Logic
+    else:
+        if df.shape[0] == 0 or df.score.max() < -200:
+            print("That's stalemate! Tie game!")
+            input("Press enter to quit.")
+            quit()
+    # Player Turn Logic
+    if cboard.turn == color or True:
+        print("It's " + color + "'s turn!'")
         move = input("\nEnter a move, 'help', or 'quit': ")
+        # Handle quit request
         if move == 'quit':
             quit()
+        # Handle help request
         elif move == 'help':
             info = ("I figured you'd probably need help. Here are some of the "
                     "things you can do, besides lose.\n\n"
                     "quit\t-\tQuits the game, like the pathetic quitter you are.\n"
                     "help\t-\tYou should already know what this does.\n"
                     "info a1\t-\tGives information about the piece on a1.\n"
+                    "scores a1\t-\tShows how the AI would score your moves.\n"
                     "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
                     )
             print(info)
+        # Handle piece info request
+        elif move == 'scores':
+            print(df)
         elif ' ' in move and move.split(' ')[0] == 'info':
             try:
                 position = interpret_string(move.split(' ')[1])
@@ -172,43 +198,23 @@ while True:
             except:
                 print("Invalid input.")
                 fails += 1
+        # Handle movement
         elif ' ' in move:
-            try:
-                piece = interpret_string(move.split(' ')[0])
-                dest = interpret_string(move.split(' ')[1])
-                if check:
-                    try: 
-                        score = df.loc[(df.orig==piece) & 
-                                       (df.dest==dest),
-                                       'score'].values[0]
-                        if score < -200:
-                            print("Still in check! Try another move.")
-                        else:
-                            check, dummy = cboard.move_piece(cboard[piece].occ, 
-                                                         (dest), True, True)
-                    except Exception as e:
-                        print("Invalid move. 1", e)
-                else:
-                    check = cboard.move_piece(cboard[piece].occ, 
-                                                     (dest), True, True)
-            except:
-                print("Invalid move.")
-                fails += 1
+            piece = interpret_string(move.split(' ')[0])
+            dest = interpret_string(move.split(' ')[1])
+            # Identify if move leaves player in check
+            score = df.loc[(df.orig==piece) & (df.dest==dest),
+                           'score'].values[0]
+            if score < -200:
+                print("Would put you in check! Try agin.")
+            else:
+                check, dummy = cboard.move_piece(cboard[piece].occ,
+                                             (dest), True, True)
         else:
             print("Invalid input.")
-            fails += 1
     else:
         sim = Simulator(cboard, gen1, gen2)
         print("That means me. :) Let me think...")
         orig, dest = sim.multi_level_simulate()
-        check = cboard.move_piece(cboard[orig].occ, 
+        check = cboard.move_piece(cboard[orig].occ,
                                          (dest), True, True, False)
-        
-        
-        
-
-
-
-
-
-
