@@ -514,6 +514,7 @@ class Chessboard:
         if piece.type == 'pawn' and dest[1] in [0, 7]:
             if human == False:
                 promotion = 'queen'
+                if printer: print(piece.symbol + " promoted to queen!")
             else:
                 promotion = input("Pawn promotion! What piece would you like? "
                               "Enter the name of the piece \nyou want, such "
@@ -553,9 +554,9 @@ class Chessboard:
         if printer:
             if check:
                 statement = "Check! " + statement
+            print(statement)
             if self.player_color == 'white':
                 self.view(True)
             else:
                 self.view(False)
-            print(statement)
         return check

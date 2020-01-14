@@ -131,12 +131,20 @@ os.system('cls' if os.name == 'nt' else 'clear')
 
 # Custom Board Set Up for Debuging
 from classes import Piece
-cboard = Chessboard(player_color = 'black')
-cboard[0,2].occ = Piece('white', 'king', 0, 2)
-cboard[7,7].occ = Piece('black', 'king', 7, 7)
-#cboard[3,0].occ = Piece('black', 'bishop', 3, 0)
-cboard[7,3].occ = Piece('black', 'rook', 7, 3)
-cboard[7,1].occ = Piece('black', 'rook', 7, 1)
+cboard = Chessboard(player_color = 'white')
+# Two Rook Endgame
+# cboard[0,0].occ = Piece('black', 'king', 0, 0)
+# cboard[7,7].occ = Piece('white', 'king', 7, 7)
+# cboard[7,2].occ = Piece('white', 'rook', 7, 2)
+# cboard[7,1].occ = Piece('white', 'rook', 7, 1)
+
+# Pawn Promotions
+cboard[0,0].occ = Piece('black', 'king', 0, 0)
+cboard[7,7].occ = Piece('white', 'king', 7, 7)
+cboard[7,1].occ = Piece('white', 'rook', 7, 1)
+cboard[1,7].occ = Piece('white', 'rook', 1, 7)
+cboard[4,2].occ = Piece('black', 'pawn', 4, 2)
+
 cboard.get_alive_pieces()
 cboard.get_ib_moves()
 cboard.get_unobstructed_moves()
@@ -167,8 +175,8 @@ while True:
             input("Press enter to quit.")
             quit()
     # Player Turn Logic
-    if cboard.turn == color or True:
-        print("It's " + color + "'s turn!'")
+    if cboard.turn == color or False: # Set second to true for versus
+        print("It's " + cboard.turn + "'s turn!'")
         move = input("\nEnter a move, 'help', or 'quit': ")
         # Handle quit request
         if move == 'quit':
@@ -200,16 +208,19 @@ while True:
                 fails += 1
         # Handle movement
         elif ' ' in move:
-            piece = interpret_string(move.split(' ')[0])
-            dest = interpret_string(move.split(' ')[1])
-            # Identify if move leaves player in check
-            score = df.loc[(df.orig==piece) & (df.dest==dest),
-                           'score'].values[0]
-            if score < -200:
-                print("Would put you in check! Try agin.")
-            else:
-                check, dummy = cboard.move_piece(cboard[piece].occ,
-                                             (dest), True, True)
+            try:
+                piece = interpret_string(move.split(' ')[0])
+                dest = interpret_string(move.split(' ')[1])
+                # Identify if move leaves player in check
+                score = df.loc[(df.orig==piece) & (df.dest==dest),
+                               'score'].values[0]
+                if score < -200:
+                    print("Would put you in check! Try agin.")
+                else:
+                    check = cboard.move_piece(cboard[piece].occ,
+                                                 (dest), True, True)
+            except:
+                print("Invalid move!")
         else:
             print("Invalid input.")
     else:

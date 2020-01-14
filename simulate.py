@@ -28,11 +28,23 @@ def score_position(board, printer=True):
     backup_diff = 0
     center_diff = 0
     capture_diff = 0
+    mate_score = 0
+    check = False
+    dead_enemy_king = True # For simulations where the king is killed
     # Points based on living pieces
     for piece in board.alive:
-        check = False
+        if piece.color != board.turn:
+            continue
+        capture_diff -= pvals[piece.type] * 2
+        # Part 1 of identifying if you won via checkmate.
+        if piece.type == 'king':
+            dead_enemy_king = False
+            enemy_king = piece
+            enemy_king_moves = [(x, y) for move, x, y in piece.v_moves]
+    for piece in board.alive:
         if piece.color == board.turn:
-            continue # This is the person who did not just move!
+            continue
+        capture_diff += pvals[piece.type] * 2
         # Determine if in check. If so, sets score to -10000.
         if piece.type == 'king':
             if piece.threats.len > 0:
@@ -60,22 +72,25 @@ def score_position(board, printer=True):
             targeted_diff += diff
         # Points for pieces being backed up. Checked.
         for backup, x, y in piece.backups:
-            pval = pvals[piece.type]
-            diff = pval * (1/10)
-            backup_diff += diff
+            if piece.type != 'king':
+                pval = pvals[piece.type]
+                diff = pval * (1/10)
+                backup_diff += diff
         # Points for controlling the center/number of moves
         for move, x, y in piece.v_moves:
             if (x, y) in [(3, 3), (3, 4), (4, 3), (4, 4)]:
                 center_diff += .4
             else:
                 center_diff += .1
+            # Second part of checkmate logic
+            if not dead_enemy_king and (x, y) in enemy_king_moves:
+                enemy_king_moves.remove((x,y))
 
-    # Points for pieces already captured. Checked.
-    for piece in board.graveyard:
-        if piece.color == board.nonturn:
-            capture_diff -= pvals[piece.type] * 2
-        else:
-            capture_diff += pvals[piece.type] * 2
+    # Final part of checkmate logic
+    if (dead_enemy_king or
+            (len(enemy_king_moves) == 0 and enemy_king.threats.len > 0)):
+        mate_score = 500
+        if printer: "Checkmate detected!"
 
     # Round everything to one decimal
     targeting_diff = round(targeting_diff, 1)
@@ -86,7 +101,7 @@ def score_position(board, printer=True):
 
     # Print
     score = (targeting_diff + targeted_diff + backup_diff + center_diff \
-             + capture_diff) if not check else -1000
+             + capture_diff + mate_score) if not check else -1000
     if printer:
         print_part = "Points from {}: {}"
         print(print_part.format("targeting",str(targeting_diff)))
@@ -96,7 +111,7 @@ def score_position(board, printer=True):
         print(print_part.format("captures",str(capture_diff)))
         print("Total score is: " + str(score))
     return (capture_diff, center_diff, backup_diff,
-            targeted_diff, targeting_diff, score)
+            targeted_diff, targeting_diff, mate_score, score)
 
 
 class Simulator:
@@ -133,8 +148,9 @@ class Simulator:
                            })
         for i, (origin, destination) in enumerate(moves):
             temp_board = c.deepcopy(board)
-            temp_board.move_piece(temp_board[origin].occ, destination, True)
-            cap, cent, back, targeted, targeting, score = score_position(
+            temp_board.move_piece(temp_board[origin].occ, destination, True,
+                                  False, False)
+            cap, cent, back, targeted, targeting, mate_score, score = score_position(
                     temp_board, printer=False)
             df.loc[i,:] = [origin, destination, score, cap, cent, targeting,
                   targeted, back]
@@ -149,11 +165,11 @@ class Simulator:
         df = self.simulate() # Looking at available moves for round 1
         sub_df_list = []
         # For each move in round 1, "make" the move and score it.
-        for i in range(self.gen1):
+        for i in range(min(self.gen1, df.shape[0])):
             temp_board_1 = c.deepcopy(self.board)
             temp_board_1.move_piece(temp_board_1[df.loc[i,'orig']].occ,
                                     df.loc[i,'dest'],
-                                    True, False)
+                                    True, False, False)
             sim_1 = Simulator(temp_board_1)
             sub_df = sim_1.simulate()
             # Bring in m1 values alongisde the m2 values already in sub_df
@@ -177,16 +193,16 @@ class Simulator:
         # third with simulate() and bring back the old information.
         for i in move1:
             filt = new_df.loc[new_df.m1_concat == i,:].reset_index(drop=True)
-            for j in range(self.gen2):
+            for j in range(min(self.gen2, filt.shape[0])):
                 temp_board_2 = c.deepcopy(self.board)
                 temp_board_2.move_piece(temp_board_2[
                     filt.loc[j,'m1_orig']].occ,
                     filt.loc[j,'m1_dest'],
-                    True)
+                    True, False, False)
                 temp_board_2.move_piece(temp_board_2[
                     filt.loc[j,'orig']].occ,
                     filt.loc[j,'dest'],
-                    True)
+                    True, False, False)
                 sim_2 = Simulator(temp_board_2)
                 sub_df2 = sim_2.simulate()
                 sub_df2['m2_orig'] = [filt.loc[j,'orig']] * sub_df2.shape[0]
