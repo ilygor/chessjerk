@@ -6,7 +6,5 @@ parameters. This way we can optimize the parameters!
 2. Flavor text. :)
 
 3. Fix endgame AI. It's terrible.
-
-6. Just make the AI better in general.
-
-7. Fix AI pawn promotion.
+  3a. Perhaps fix the simulate function to be recursive,
+  then in endgame, we can "recur" more times due to fewer moves. :)
