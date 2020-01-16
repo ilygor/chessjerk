@@ -158,8 +158,10 @@ while True:
         human_df = df
         print("It's " + cboard.turn + "'s turn!")
         move = input("\nEnter a move, 'help', or 'quit': ")
+        # Handle quit request
         if move == 'quit':
             quit()
+        # Handle request for info
         elif move == 'help':
             info = ("I figured you'd probably need help. Here are some of the "
                     "things you can do, besides lose.\n\n"
@@ -171,13 +173,16 @@ while True:
                     "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
                     )
             print(info)
+        # Handle request for human score dataframe
         elif move == 'scores':
             print(human_df)
+        # Handle reqest for AI score dataframe
         elif move == 'ai':
             if ai_df is not None:
                 print(ai_df)
             else:
                 print("Not available yet.")
+        # Handle Info Request for Piece
         elif ' ' in move and move.split(' ')[0] == 'info':
             try:
                 position = interpret_string(move.split(' ')[1])

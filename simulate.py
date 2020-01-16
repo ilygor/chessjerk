@@ -159,7 +159,7 @@ class Simulator:
         return df.sort_values('score', ascending=False).reset_index(drop=True)
 
     def multi_level_simulate(self):
-        """ugly function. Looks at all moves, takes the top (self.gen1) then
+        """Ugly function. Looks at all moves, takes the top (self.gen1) then
         looks at all responses. Takes top (self.gen2) of those. Then looks at
         all moves again. For each move1, looks at the worst case scenario based
         on moves 2 and 3. Chooses the move 1 with the best worst-case scenario.
@@ -262,43 +262,3 @@ class Simulator:
                                ascending=False).reset_index()
         gen2_df.to_csv('ai_move_analysis.csv',index=False)
         return temp.loc[0,'m1_o'], temp.loc[0,'m1_d']
-
-
-        def multi_simulate(self):
-            # Analyze first moves
-            sim_1 = Simulator(self.board)
-            df_1 = self.simulate()
-            df_1 = df_1.head(gen_1)
-            origs_1 = df_1.orig.to_list()
-            dests_1 = df_1.dest.to_list()
-            scores_1 = df_1.score.to_list()
-            df_2_list = []
-            for o, d, s in zip(origs_1, dests_1, scores_1):
-                # Make first move
-                board_1.move_piece(board_1[o].occ, d, True, False, False)
-                # Analyze second moves
-                sim_2 = Simulator(sim_1.board)
-                df_2 = sim2.simulate()
-                df_2 = df_2.head(gen_2)
-                df_2['orig_1'] = [o] * df_2.shape[0]
-                df_2['dest_1'] = [d] * df_2.shape[0]
-                df_2['score_1'] = [s] * df_2.shape[0]
-                df_2_list += [df_2]
-            df2 = pd.concat(df_2_list, axis=0).sort_values('score',
-                ascending=False).reset_index(drop=True)
-            grouped_2 = df2.groupby(['orig_1', 'dest_1']).max()['score']
-            # Prune round 1
-            grouped_2 = grouped_2.reset_index().sort_values('score',
-                ascending=True).head(gen_1_p)
-            # Prune
-            # Use df2 scores to prune first generation.
-
-            # Group by, getting max 'score' holding gen 1 origin and dest
-            # The generations with high max gen 2 scores get pruned.
-
-            pass
-
-
-
-
-# I want it to evaluate the first 6 moves...

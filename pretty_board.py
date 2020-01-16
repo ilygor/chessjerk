@@ -17,23 +17,23 @@ p2 = '  O  '
 p3 = '  B  '
 p4 = ' /P\ '
 
-r0 = '     ' 
+r0 = '     '
 r1 = '|+++|'
-r2 = ' | | ' 
-r3 = ' |B| ' 
+r2 = ' | | '
+r3 = ' |B| '
 r4 = '/_R_\\'
-   
+
 b0 = '     '
 b1 = '  0  '
 b2 = ' /^\ '
 b3 = ' \B/ '
 b4 = ' /B\ '
-      
+
 n0 = '     '
 n1 = ' ,^^ '
 n2 = '< ^ |'
 n3 = ' /B |'
-n4 = '/_N_\\' 
+n4 = '/_N_\\'
 
 q0 = '  .  '
 q1 = '\/^\/'
@@ -86,10 +86,11 @@ endline = '@' # Will be replaced later, so it's fine unformatted
 
 # Create grid row strings
 border_row = "".join([raw_corner + raw_row_border * col_width \
-                      for i in range(8)]) + raw_corner + endline    
+                      for i in range(8)]) + raw_corner + endline
 spacer_row = border_row.replace(raw_row_border, raw_space).replace(
                 raw_corner, raw_col_border)
 
+# Generate shaded (stippled) rows
 spacer_row_odd_a = ''
 spacer_row_odd_b = ''
 spacer_row_even_a = ''
@@ -121,7 +122,8 @@ for i in spacer_row:
         spacer_row_even_b += i
         spacer_row_odd_a += i
         spacer_row_odd_b += i
-        
+
+# Generate alphabet at top row border
 border_row_top = list(border_row)
 alpha_str = 'ABCDEFGH'
 for i in range(8):
@@ -135,12 +137,12 @@ for row in range(8):
         if row % 2 == 0:
             if line_num % 2 == 0:
                 grid = grid + spacer_row_even_a
-            else: 
+            else:
                 grid = grid + spacer_row_even_b
         else:
             if line_num % 2 == 0:
                 grid = grid + spacer_row_odd_a
-            else: 
+            else:
                 grid = grid + spacer_row_odd_b
     grid = grid + border_row
 row_list = grid.split(endline)[:-1]
@@ -149,15 +151,16 @@ row_list = grid.split(endline)[:-1]
 #### Functions
 # Format grid and insert ascii pieces
 def pretty_board(cboard, black_first = False):
-    """Takes a Chessboard object and prints a beautiful, color-coded string 
+    """Takes a Chessboard object and prints a beautiful, color-coded string
     using constants defined in pretty_board.py. Returns nothing."""
     new_row_list = []
-    y = -1 # Tracks what "cell" you're in, 0 to 7 (-1 since it starts on border)
-    line_num = 0 # Tracks what line of the cell you're in, 0 to row_height
+    y = -1 # Tracks what "row" you're in, 0 to 7 (-1 since it starts on border)
+    line_num = 0 # Tracks what line of the square you're in, 0 to row_height
     for row in row_list:
+        # Handle border rows
         if row[0] == raw_corner:
             if y == -1:
-                new_row = "".join([white + i + reset for i in 
+                new_row = "".join([white + i + reset for i in
                                    border_row_top[:-1]])
             else:
                 new_row = row.replace(raw_corner, corner)
@@ -165,31 +168,32 @@ def pretty_board(cboard, black_first = False):
             y += 1
             line_num = 0
             new_row_list += [new_row]
+        # Handle other rows
         else:
             string_list = row.split(raw_col_border)[:-1]
             x = -1 # Tracks what "column" we're in, from 0 to 7 (-1 and 8 are borders)
             new_row = ''
             for string in string_list:
-                if string == '':
-                    # Determine if we need to add the rank
+                if string == '': # Borders start with empty string
+                    # Determine if we need to add the rank (number) to border
                     if line_num == int(row_height/2):
                         new_row += white + str(y + 1) + reset
                     else:
                         new_row += col_border
+                # Handle insertion of "piece strings" for pawns, etc.
                 elif line_num >= vert_spacer and line_num < (row_height-vert_spacer):
-                    # These are valid lines for piece replacement.
                     occ = cboard[x,y].occ
                     if occ:
                         # Perform no replacements if piece line would be empty.
-                        # Like pawn only takes three lines, so we can treat
-                        if (occ.type in ['rook', 'knight', 'bishop'] and 
+                        # E.G. pawn has height=3, so we ignore higher lines.
+                        if (occ.type in ['rook', 'knight', 'bishop'] and
                                 line_num <= vert_spacer):
                             new_row_piece = string.replace(raw_fill, fill)
                             new_row_piece = new_row_piece.replace(raw_space, space)
                         elif occ.type == 'pawn' and line_num < (vert_spacer + 2):
                             new_row_piece = string.replace(raw_fill, fill)
                             new_row_piece = new_row_piece.replace(raw_space, space)
-                        else:  
+                        else:
                             cpiece_string = piece_dict[occ.type][line_num-vert_spacer]
                             if occ.color == 'black':
                                 # Already has a B
@@ -205,6 +209,7 @@ def pretty_board(cboard, black_first = False):
                             right = right.replace(raw_fill, fill)
                             right = right.replace(raw_space, space)
                             new_row_piece = left + cpiece_string + right
+                    # If no piece on that square
                     else:
                         new_row_piece = string.replace(raw_fill, fill)
                         new_row_piece = new_row_piece.replace(raw_space, space)
@@ -219,6 +224,7 @@ def pretty_board(cboard, black_first = False):
             line_num += 1
     if not black_first:
         print("\n".join(new_row_list))
+    # Flip board orientation if player is black. It's just nicer!
     elif black_first:
         first = new_row_list.pop(0)
         cells0 = new_row_list[0:row_height+1]

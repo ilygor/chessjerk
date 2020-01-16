@@ -27,10 +27,13 @@ for x in range(8):
 
 # Define Functions
 def get_btwn(pos, new_pos):
-    """Returns list of tuples between pos tuple and new_pos tuple."""
+    """Returns list of tuples between pos tuple and new_pos tuple.
+    (1,2) and (3,4) would return [(2,3)]"""
     x_btwn = list(range(pos[0] + 1, new_pos[0]))
+    # Logic if first x is larger than second x
     x_btwn = list(range(pos[0] - 1, new_pos[0], -1)) if not x_btwn else x_btwn
     y_btwn = list(range(pos[1] + 1, new_pos[1]))
+    # Logic if first y is larger than second y
     y_btwn = list(range(pos[1] - 1, new_pos[1], -1)) if not y_btwn else y_btwn
     # Lists must be equal, even if only moving in x or y direction
     x_btwn = [pos[0]] * len(y_btwn) if len(x_btwn) < len(y_btwn) else x_btwn
@@ -40,13 +43,15 @@ def get_btwn(pos, new_pos):
 
 # Define Classes
 class CustArray:
-    """A custom array to hold Piece and Square data."""
+    """A custom array to hold Piece and Square data. Size varies based on the
+    information it needs to hold. For in_bound, unobstructed, valid moves, and
+    targets this is 27. Move history is more, rest are intuitive."""
     dtype = [('field', (np.str_, 10)), ('x', np.int8), ('y', np.int8)]
     size_dict = {
         'ib_moves': 27, # Most possible moves is 27 by the queen
         'uo_moves': 27,
         'v_moves': 27,
-        'hist': 50, # A single piece is not likely to be moved more
+        'hist': 100, # A single piece is not likely to be moved more
         'sq_tgts': 27,
         'backing_up': 15, # 15 allied pieces
         'backups': 15, # 15 allied pieces
@@ -117,11 +122,8 @@ class Piece():
         self.x = x
         self.y = y
         self.pos = (x, y)
-        self.status = 'alive'
         self.symbol = color[0].upper() + "_" + piece_type.title()
         self.kill_list = []
-        self.killed_by = None
-
         self.ib_moves = CustArray('ib_moves')
         self.uo_moves = CustArray('uo_moves')
         self.v_moves = CustArray('v_moves')
@@ -484,8 +486,6 @@ class Chessboard:
                                   + dest_string + ': ' + dest_piece.symbol \
                                   + " captured."]
             self.last_capture_turn = self.turn_num
-            dest_piece.status = 'dead'
-            dest_piece.killed_by = piece.symbol
             piece.kill_list += [dest_piece]
         else:
             self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
@@ -565,7 +565,7 @@ class Chessboard:
                 self.view(False)
         return check
 
-    def game_over_check(self, player_color):
+    def game_over_check(self):
         """The computer wins if the player loses all their pieces except the
         king, and the AI has a certain number of specific pieces. This is to
         avoid tedious endgame states (i.e. you can force a win with a rook
@@ -580,7 +580,7 @@ class Chessboard:
         ai_pieces = []
         human_pieces = []
         for i in self.alive:
-            if i.color != player_color:
+            if i.color != self.player_color:
                 ai_pieces += [i.type]
             else:
                 human_pieces += [i.type]
