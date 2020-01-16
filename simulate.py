@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Logic for simulating and scoring moves. This is the ugliest module, and most
-in need of refactoring. That said, it works and is still readable.
+Logic for simulating and scoring moves.
 """
 
 # Imports
@@ -159,106 +158,37 @@ class Simulator:
         return df.sort_values('score', ascending=False).reset_index(drop=True)
 
     def multi_level_simulate(self):
-        """Ugly function. Looks at all moves, takes the top (self.gen1) then
-        looks at all responses. Takes top (self.gen2) of those. Then looks at
-        all moves again. For each move1, looks at the worst case scenario based
-        on moves 2 and 3. Chooses the move 1 with the best worst-case scenario.
-        """
-        df = self.simulate() # Looking at available moves for round 1
-        sub_df_list = []
-        # For each move in round 1, "make" the move and score it.
-        for i in range(min(self.gen1, df.shape[0])):
-            temp_board_1 = c.deepcopy(self.board)
-            temp_board_1.move_piece(temp_board_1[df.loc[i,'orig']].occ,
-                                    df.loc[i,'dest'],
-                                    True, False, False)
-            sim_1 = Simulator(temp_board_1)
-            sub_df = sim_1.simulate()
-            # Bring in m1 values alongisde the m2 values already in sub_df
-            sub_df['m1_orig'] = [df.loc[i,'orig']] * sub_df.shape[0]
-            sub_df['m1_dest'] = [df.loc[i,'dest']] * sub_df.shape[0]
-            sub_df['m1_score'] = [df.loc[i,'score']] * sub_df.shape[0]
-            sub_df['m1_capture_score'] = [df.loc[i,'capture_score']] * sub_df.shape[0]
-            sub_df['m1_control_score'] = [df.loc[i,'control_score']] * sub_df.shape[0]
-            sub_df['m1_targeting_score'] = [df.loc[i,'targeting_score']] * sub_df.shape[0]
-            sub_df['m1_targeted_score'] = [df.loc[i,'targeted_score']] * sub_df.shape[0]
-            sub_df['m1_backup_score'] = [df.loc[i,'backup_score']] * sub_df.shape[0]
-            sub_df_list += [sub_df]
-        new_df = pd.concat(sub_df_list, axis=0)
-        new_df = new_df.sort_values('score', ascending = False)
-        # Filter the data frame
-        new_df['m1_concat'] = new_df["m1_orig"].map(str) + \
-                              new_df["m1_dest"].map(str)
-        move1 = new_df.m1_concat.unique().tolist()
-        gen2_list = []
-        # Repeat the process. We make the first and second moves, score the
-        # third with simulate() and bring back the old information.
-        for i in move1:
-            filt = new_df.loc[new_df.m1_concat == i,:].reset_index(drop=True)
-            for j in range(min(self.gen2, filt.shape[0])):
-                temp_board_2 = c.deepcopy(self.board)
-                temp_board_2.move_piece(temp_board_2[
-                    filt.loc[j,'m1_orig']].occ,
-                    filt.loc[j,'m1_dest'],
-                    True, False, False)
-                temp_board_2.move_piece(temp_board_2[
-                    filt.loc[j,'orig']].occ,
-                    filt.loc[j,'dest'],
-                    True, False, False)
-                sim_2 = Simulator(temp_board_2)
-                sub_df2 = sim_2.simulate()
-                sub_df2['m2_orig'] = [filt.loc[j,'orig']] * sub_df2.shape[0]
-                sub_df2['m2_dest'] = [filt.loc[j,'dest']] * sub_df2.shape[0]
-                sub_df2['m2_score'] = [filt.loc[j,'score']] * sub_df2.shape[0]
-                sub_df2['m2_capture_score'] = [filt.loc[j,'capture_score']] * sub_df2.shape[0]
-                sub_df2['m2_control_score'] = [filt.loc[j,'control_score']] * sub_df2.shape[0]
-                sub_df2['m2_targeting_score'] = [filt.loc[j,'targeting_score']] * sub_df2.shape[0]
-                sub_df2['m2_targeted_score'] = [filt.loc[j,'targeted_score']] * sub_df2.shape[0]
-                sub_df2['m2_backup_score'] = [filt.loc[j,'backup_score']] * sub_df2.shape[0]
-                sub_df2['m1_orig'] = [filt.loc[j,'m1_orig']] * sub_df2.shape[0]
-                sub_df2['m1_dest'] = [filt.loc[j,'m1_dest']] * sub_df2.shape[0]
-                sub_df2['m1_score'] = [filt.loc[j,'m1_score']] * sub_df2.shape[0]
-                sub_df2['m1_capture_score'] = [filt.loc[j,'m1_capture_score']] * sub_df2.shape[0]
-                sub_df2['m1_control_score'] = [filt.loc[j,'m1_control_score']] * sub_df2.shape[0]
-                sub_df2['m1_targeting_score'] = [filt.loc[j,'m1_targeting_score']] * sub_df2.shape[0]
-                sub_df2['m1_targeted_score'] = [filt.loc[j,'m1_targeted_score']] * sub_df2.shape[0]
-                sub_df2['m1_backup_score'] = [filt.loc[j,'m1_backup_score']] * sub_df2.shape[0]
-                gen2_list += [sub_df2]
-        gen2_df = pd.concat(gen2_list, axis=0).reset_index(drop=True)
-        # Interpret the results. We want the move with the best worst-case scen.
-        gen2_df['m1_concat'] = gen2_df["m1_orig"].map(str) + \
-                       gen2_df["m1_dest"].map(str)
-        gen2_df['m2_concat'] = gen2_df["m2_orig"].map(str) + \
-                               gen2_df["m2_dest"].map(str)
-        move1 = gen2_df.m1_concat.unique().tolist()
-        m3_o = []
-        m3_d = []
-        m3_s = []
-        m2_o = []
-        m2_d = []
-        m2_s = []
-        m1_o = []
-        m1_d = []
-        m1_s = []
-        for i in move1:
-            filt = gen2_df.loc[gen2_df.m1_concat == i,:].reset_index(drop=True)
-            move2 = filt.m2_concat.unique().tolist()
-            for j in move2:
-                m1_o += [filt.loc[0,'m1_orig']]
-                m1_d += [filt.loc[0,'m1_dest']]
-                m1_s += [filt.loc[0,'m1_score']]
-                filt2 = filt.loc[filt.m2_concat == j,:].reset_index(drop=True)
-                m2_o += [filt2.loc[0,'m2_orig']]
-                m2_d += [filt2.loc[0,'m2_dest']]
-                m2_s += [filt2.loc[0,'m2_score']]
-                filt2 = filt2.sort_values('score', ascending=False).reset_index(drop=True)
-                m3_o += [filt2.loc[0, 'orig']]
-                m3_d += [filt2.loc[0, 'dest']]
-                m3_s += [filt2.loc[0, 'score']]
-        final_df = pd.DataFrame({'m1_o':m1_o, 'm1_d':m1_d, 'm1_s':m1_s,
-                                 'm2_o':m2_o, 'm2_d':m2_d, 'm2_s':m2_s,
-                                 'm3_o':m3_o, 'm3_d':m3_d, 'm3_s':m3_s,})
-        temp = final_df.groupby(['m1_o','m1_d']).min().sort_values('m3_s',
-                               ascending=False).reset_index()
-        gen2_df.to_csv('ai_move_analysis.csv',index=False)
-        return temp.loc[0,'m1_o'], temp.loc[0,'m1_d']
+        """Runs simulate in nested loops! First simulates all moves for AI
+        player. Then makes top 6 of those moves (at difficulty 9). Looks at all
+        responses to those 6. Then makes top 3 responses to those (at diff 9).
+        Finally looks at all moves available in response to those 3. Selects
+        the FIRST move with the highest MOVE 3 score."""
+        cols = ['m1_orig', 'm1_dest', 'm1_score',
+                'm2_orig', 'm2_dest', 'm2_score',
+                'orig', 'dest', 'score']
+        results = pd.DataFrame({i:[] for i in cols})
+        df1 = self.simulate()
+        for i in range(self.gen1):
+            copy1 = c.deepcopy(self.board)
+            copy1.move_piece(copy1[df1.loc[i,'orig']].occ,
+                              df1.loc[i,'dest'],
+                              True, False, False)
+            sim1 = Simulator(copy1)
+            df2 = sim1.simulate() # Scores all responses to first move
+            for j in range(self.gen2):
+                copy2 = c.deepcopy(copy1)
+                copy2.move_piece(copy2[df2.loc[j,'orig']].occ,
+                                 df2.loc[j,'dest'],
+                                 True, False, False)
+                sim2 = Simulator(copy2)
+                df3 = sim2.simulate()
+                for k in range(df3.shape[0]):
+                    row = [df1.loc[i, 'orig'], df1.loc[i, 'dest'],
+                           df1.loc[i, 'score'], df2.loc[j, 'orig'],
+                           df2.loc[j, 'dest'], df2.loc[j, 'score'],
+                           df3.loc[k, 'orig'], df3.loc[k, 'dest'],
+                           df3.loc[k, 'score']]
+                    results.loc[len(results)] = row
+        results = results.sort_values('score', ascending=False)
+        results.to_csv('ai_move_analysis.csv', index=False)
+        return results.loc[0, 'm1_orig'], results.loc[0, 'm1_dest']

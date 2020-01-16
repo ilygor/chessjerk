@@ -1,5 +1,5 @@
 TO DO:
 
-1. Clean up multi_level_simulate code. It's gross.
+1. Bugfixes and minor improvements to scoring logic.
 
 2. Flavor text. :) (OPTIONAL)

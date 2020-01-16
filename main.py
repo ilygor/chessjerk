@@ -13,7 +13,7 @@ from classes import Chessboard
 from simulate import Simulator
 
 # Define constants
-wait = 2 # Amount of time to wait between printouts.
+wait = 0 # Amount of time to wait between printouts.
 letter_list = ['a','b','c','d','e','f','g','h']
 
 # For each difficulty how many moves to consider, and responses to consider
@@ -149,7 +149,7 @@ while True:
             input("Press enter to quit.\n")
             quit()
     # Other Game Ending Logic
-    end, reason = cboard.game_over_check(color)
+    end, reason = cboard.game_over_check()
     if end:
         input(reason + " Press enter to quit.\n")
         quit()
