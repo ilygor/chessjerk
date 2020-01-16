@@ -31,7 +31,8 @@ def score_position(board, printer=True):
     mate_score = 0
     check = False
     dead_enemy_king = True # For simulations where the king is killed
-    # Points based on living pieces
+
+    # First loop on opposition's pieces: skip the person who just moved
     for piece in board.alive:
         if piece.color != board.turn:
             continue
@@ -41,6 +42,8 @@ def score_position(board, printer=True):
             dead_enemy_king = False
             enemy_king = piece
             enemy_king_moves = [(x, y) for move, x, y in piece.v_moves]
+
+    # Now loop on person who just moved's pieces
     for piece in board.alive:
         if piece.color == board.turn:
             continue
@@ -112,7 +115,6 @@ def score_position(board, printer=True):
         print("Total score is: " + str(score))
     return (capture_diff, center_diff, backup_diff,
             targeted_diff, targeting_diff, mate_score, score)
-
 
 class Simulator:
     def __init__(self, cboard, gen1 = 3, gen2 = 2):
@@ -260,3 +262,43 @@ class Simulator:
                                ascending=False).reset_index()
         gen2_df.to_csv('ai_move_analysis.csv',index=False)
         return temp.loc[0,'m1_o'], temp.loc[0,'m1_d']
+
+
+        def multi_simulate(self):
+            # Analyze first moves
+            sim_1 = Simulator(self.board)
+            df_1 = self.simulate()
+            df_1 = df_1.head(gen_1)
+            origs_1 = df_1.orig.to_list()
+            dests_1 = df_1.dest.to_list()
+            scores_1 = df_1.score.to_list()
+            df_2_list = []
+            for o, d, s in zip(origs_1, dests_1, scores_1):
+                # Make first move
+                board_1.move_piece(board_1[o].occ, d, True, False, False)
+                # Analyze second moves
+                sim_2 = Simulator(sim_1.board)
+                df_2 = sim2.simulate()
+                df_2 = df_2.head(gen_2)
+                df_2['orig_1'] = [o] * df_2.shape[0]
+                df_2['dest_1'] = [d] * df_2.shape[0]
+                df_2['score_1'] = [s] * df_2.shape[0]
+                df_2_list += [df_2]
+            df2 = pd.concat(df_2_list, axis=0).sort_values('score',
+                ascending=False).reset_index(drop=True)
+            grouped_2 = df2.groupby(['orig_1', 'dest_1']).max()['score']
+            # Prune round 1
+            grouped_2 = grouped_2.reset_index().sort_values('score',
+                ascending=True).head(gen_1_p)
+            # Prune
+            # Use df2 scores to prune first generation.
+
+            # Group by, getting max 'score' holding gen 1 origin and dest
+            # The generations with high max gen 2 scores get pruned.
+
+            pass
+
+
+
+
+# I want it to evaluate the first 6 moves...

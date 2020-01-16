@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""The m ain file through which chess can be played."""
+"""The main file through which chess can be played."""
 
 # Import packages
 from time import sleep
@@ -13,8 +13,9 @@ from classes import Chessboard
 from simulate import Simulator
 
 # Define constants
-wait = 0 # Amount of time to wait between printouts. Good for comedy and drama.
+wait = 2 # Amount of time to wait between printouts.
 letter_list = ['a','b','c','d','e','f','g','h']
+
 # For each difficulty how many moves to consider, and responses to consider
 difficulty_map = {
         1: (1,1),
@@ -28,12 +29,14 @@ difficulty_map = {
         9: (6,3),
         }
 
+
 # Useful functions
 def interpret_string(string):
     """Given a string like "A2" returns "(0,1)" so that we can use it."""
     x = letter_list.index(string[0].lower())
     y = int(string[1]) - 1
     return (x,y)
+
 
 # Main code begins here
 os.system('cls' if os.name == 'nt' else 'clear')
@@ -76,7 +79,6 @@ elif difficulty in ['4','5','6','7']:
 elif difficulty in ['8','9']:
     print("I'm certain you will regret your decision.\n\n")
 sleep(wait)
-
 gen1, gen2 = difficulty_map[int(difficulty)]
 
 # Color selection
@@ -111,7 +113,7 @@ print("The game is afoot! You can always say 'help' for help, or 'quit' to "
 sleep(wait)
 print("You make moves by entering the origin square followed by the "
       "destination square. \nFor instance, 'B7 B5' is a valid opener for white.")
-sleep(wait * 2)
+sleep(wait * 3)
 print("I hope you're ready to lose.")
 sleep(int(wait/2))
 print("3")
@@ -121,43 +123,15 @@ sleep(int(wait/2))
 print("1")
 sleep(int(wait/2))
 os.system('cls' if os.name == 'nt' else 'clear')
-# cboard = Chessboard(player_color = color)
-# cboard.full_set_up()
-# if color == 'black':
-#     pretty_board(cboard, False)
-# else:
-#     pretty_board(cboard, True)
-
-
-# Custom Board Set Up for Debuging
-from classes import Piece
-cboard = Chessboard(player_color = 'white')
-# Two Rook Endgame
-# cboard[0,0].occ = Piece('black', 'king', 0, 0)
-# cboard[7,7].occ = Piece('white', 'king', 7, 7)
-# cboard[7,2].occ = Piece('white', 'rook', 7, 2)
-# cboard[7,1].occ = Piece('white', 'rook', 7, 1)
-
-# Pawn Promotions
-cboard[0,0].occ = Piece('black', 'king', 0, 0)
-cboard[7,7].occ = Piece('white', 'king', 7, 7)
-cboard[7,1].occ = Piece('white', 'rook', 7, 1)
-cboard[1,7].occ = Piece('white', 'rook', 1, 7)
-cboard[4,2].occ = Piece('black', 'pawn', 4, 2)
-
-cboard.get_alive_pieces()
-cboard.get_ib_moves()
-cboard.get_unobstructed_moves()
-cboard.get_valid_moves()
-cboard.get_valid_castles()
-pretty_board(cboard, True)
-# End custom board set up
-
-
+cboard = Chessboard(player_color = color)
+cboard.full_set_up()
+if color == 'black':
+    pretty_board(cboard, False)
+else:
+    pretty_board(cboard, True)
 
 # Game loop
-df = 0
-fails = 0
+ai_df = None
 check = False
 while True:
     sim = Simulator(cboard)
@@ -166,35 +140,44 @@ while True:
     if check:
         if df.score.max() < -200:
             print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
-            input("Press enter to quit.")
+            input("Press enter to quit.\n")
             quit()
     # Stalemate Logic
     else:
         if df.shape[0] == 0 or df.score.max() < -200:
             print("That's stalemate! Tie game!")
-            input("Press enter to quit.")
+            input("Press enter to quit.\n")
             quit()
+    # Other Game Ending Logic
+    end, reason = cboard.game_over_check(color)
+    if end:
+        input(reason + " Press enter to quit.\n")
+        quit()
     # Player Turn Logic
-    if cboard.turn == color or False: # Set second to true for versus
-        print("It's " + cboard.turn + "'s turn!'")
+    if cboard.turn == color:
+        human_df = df
+        print("It's " + cboard.turn + "'s turn!")
         move = input("\nEnter a move, 'help', or 'quit': ")
-        # Handle quit request
         if move == 'quit':
             quit()
-        # Handle help request
         elif move == 'help':
             info = ("I figured you'd probably need help. Here are some of the "
                     "things you can do, besides lose.\n\n"
                     "quit\t-\tQuits the game, like the pathetic quitter you are.\n"
                     "help\t-\tYou should already know what this does.\n"
                     "info a1\t-\tGives information about the piece on a1.\n"
-                    "scores a1\t-\tShows how the AI would score your moves.\n"
+                    "scores\t-\tShows how the AI would score your moves.\n"
+                    "ai \t-\tShows how the AI scored its previous moves.\n"
                     "a7 a6\t-\tMoves the piece on a7 to a6, if possible.\n"
                     )
             print(info)
-        # Handle piece info request
         elif move == 'scores':
-            print(df)
+            print(human_df)
+        elif move == 'ai':
+            if ai_df is not None:
+                print(ai_df)
+            else:
+                print("Not available yet.")
         elif ' ' in move and move.split(' ')[0] == 'info':
             try:
                 position = interpret_string(move.split(' ')[1])
@@ -205,7 +188,6 @@ while True:
                     print("There's no piece there... use your head.")
             except:
                 print("Invalid input.")
-                fails += 1
         # Handle movement
         elif ' ' in move:
             try:
@@ -223,9 +205,11 @@ while True:
                 print("Invalid move!")
         else:
             print("Invalid input.")
+    # Handle AI Move
     else:
-        sim = Simulator(cboard, gen1, gen2)
+        ai_df = df
         print("That means me. :) Let me think...")
+        sim = Simulator(cboard, gen1, gen2)
         orig, dest = sim.multi_level_simulate()
         check = cboard.move_piece(cboard[orig].occ,
                                          (dest), True, True, False)

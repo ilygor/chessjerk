@@ -11,6 +11,7 @@ import pandas as pd
 from random import sample
 from pretty_board import pretty_board
 
+
 # Define Constants
 color_list = ['white', 'black']
 pawn_dir = dict(zip(color_list, [1, -1]))
@@ -22,6 +23,7 @@ for x in range(8):
     for y in range(8):
         lookup_dict[(x,y)] = x_index[x] + '_' + str(y_index[y])
         rev_lookup['_'.join([x_index[x], str(y_index[y])])] = (x,y)
+
 
 # Define Functions
 def get_btwn(pos, new_pos):
@@ -96,8 +98,8 @@ class CustArray:
 
 
 class ChessSquare:
+    """Class representing game squares with info about surroundings."""
     def __init__(self, color, x, y, occ=None):
-        """Class representing game squares with info about surroundings."""
         self.color = color
         self.x = x
         self.y = y
@@ -258,8 +260,8 @@ class Chessboard:
         self.turn = turn
         self.nonturn = 'black' if turn == 'white' else 'white'
         self.turn_num = 1
+        self.last_capture_turn = 1
         self.alive = []
-        self.graveyard = []
         self.player_color = player_color
         self.move_history = []
 
@@ -281,7 +283,7 @@ class Chessboard:
         full_pos_list = [(x,y) for x in range(8) for y in range(8)]
         pos_list = sample(full_pos_list, 32)
         piece_list = ['rook','knight','bishop']*2+['king','queen']+['pawn']*8
-        color_list = np.repeat(sample(['black', 'white'], 2), 16)
+        color_list = np.repeat(sample(color_list, 2), 16)
         for color, pos, piece in zip(color_list, pos_list, piece_list*2):
             self[pos].occ=Piece(color,piece,pos[0],pos[1])
             self[pos].occ.has_moved = True
@@ -477,21 +479,22 @@ class Chessboard:
         dest_piece = self[dest].occ
         if dest_piece: # Handle capture
             statement = statement + dest_piece.symbol + " has been captured!"
-            self.graveyard.append(dest_piece)
             self.alive.remove(dest_piece)
             self.move_history += [piece.symbol + ' ' + origin_string + ' > ' \
                                   + dest_string + ': ' + dest_piece.symbol \
                                   + " captured."]
+            self.last_capture_turn = self.turn_num
             dest_piece.status = 'dead'
             dest_piece.killed_by = piece.symbol
             piece.kill_list += [dest_piece]
+        else:
+            self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
+                                  dest_string + ': No capture.']
         # Update board information
         self[piece.pos].occ = None
         self[dest].occ = piece
         self.turn, self.nonturn = self.nonturn, self.turn
         self.turn_num += 1
-        self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
-                              dest_string + ': No capture.']
         # Update piece information
         piece.x, piece.y = dest
         piece.pos = dest
@@ -510,6 +513,7 @@ class Chessboard:
             self.turn, self.nonturn = self.nonturn, self.turn
             self.turn_num -= 1
             self.move_piece(rook, new_dest, False, False)
+            self.move_history = self.move_history[:-1]
         # Handle pawn promotion
         if piece.type == 'pawn' and dest[1] in [0, 7]:
             if human == False:
@@ -560,3 +564,35 @@ class Chessboard:
             else:
                 self.view(False)
         return check
+
+    def game_over_check(self, player_color):
+        """The computer wins if the player loses all their pieces except the
+        king, and the AI has a certain number of specific pieces. This is to
+        avoid tedious endgame states (i.e. you can force a win with a rook
+        and a king, but there is no need to go through the exercise.) Also
+        ends the game if a certain number of turns have passed. Returns boolean
+        for whether the game will end plus a reason."""
+        # 50 Move Rule
+        if self.turn_num - self.last_capture_turn >= 100:
+            return True, "The game is a draw due to the 50-move rule."
+        # AI has specific pieces and human has just a king
+        reason = "You resign. Checkmate is trivial at this point."
+        ai_pieces = []
+        human_pieces = []
+        for i in self.alive:
+            if i.color != player_color:
+                ai_pieces += [i.type]
+            else:
+                human_pieces += [i.type]
+        if len(human_pieces) > 1:
+            return False, ""
+        else:
+            if 'queen' in ai_pieces or 'rook' in ai_pieces:
+                return True, reason
+            elif ai_pieces.count('bishop') >= 2:
+                return True, reason
+            elif 'knight' in ai_pieces and 'bishop' in ai_pieces:
+                # There are rare cases where this can't win, but I don't care.
+                return True, reason
+            else:
+                return False, ""
