@@ -13,7 +13,7 @@ from classes import Chessboard
 from simulate import Simulator
 
 # Define constants
-wait = 0 # Amount of time to wait between printouts.
+wait = 2 # Amount of time to wait between printouts.
 letter_list = ['a','b','c','d','e','f','g','h']
 
 # For each difficulty how many moves to consider, and responses to consider
@@ -129,27 +129,6 @@ if color == 'black':
     pretty_board(cboard, False)
 else:
     pretty_board(cboard, True)
-
-#cboard.move_piece(cboard[4,1].occ, (4,3), False, False, False)
-#cboard.move_piece(cboard[1,7].occ, (2,5), False, False, False)
-#cboard.move_piece(cboard[4,0].occ, (4,1), False, False, False)
-#cboard.move_piece(cboard[6,7].occ, (5,5), False, False, False)
-#cboard.move_piece(cboard[4,1].occ, (4,2), False, True, False)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # Game loop
 ai_df = None

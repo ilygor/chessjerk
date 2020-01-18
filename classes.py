@@ -7,7 +7,6 @@ Some classes for setting up a simple chess-bot.
 
 # Package import statements
 import numpy as np
-import pandas as pd
 from random import sample
 from pretty_board import pretty_board
 
