@@ -16,7 +16,7 @@ pvals = {'pawn':1,
         'knight':3,
         'rook':5,
         'queen':9,
-        'king':15}
+        'king':9}
 
 # Top level functions;
 def score_position(board, printer=True):
@@ -35,7 +35,7 @@ def score_position(board, printer=True):
     for piece in board.alive:
         if piece.color != board.turn:
             continue
-        capture_diff -= pvals[piece.type] * 2
+        capture_diff -= pvals[piece.type] * 3
         # Part 1 of identifying if you won via checkmate.
         if piece.type == 'king':
             dead_enemy_king = False
@@ -46,7 +46,7 @@ def score_position(board, printer=True):
     for piece in board.alive:
         if piece.color == board.turn:
             continue
-        capture_diff += pvals[piece.type] * 2
+        capture_diff += pvals[piece.type] * 3
         # Determine if in check. If so, sets score to -10000.
         if piece.type == 'king':
             if piece.threats.len > 0:
@@ -62,7 +62,7 @@ def score_position(board, printer=True):
                 diff = max((tval - pval), 0)
             else:
                 diff = tval
-            targeting_diff += diff
+            targeting_diff += (diff/2)
         # Points for being targeted. Checked.
         for ttype, x, y in piece.threats:
             tval = pvals[ttype]
@@ -76,12 +76,12 @@ def score_position(board, printer=True):
         for backup, x, y in piece.backups:
             if piece.type != 'king':
                 pval = pvals[piece.type]
-                diff = pval * (1/10)
+                diff = pval * (1/20)
                 backup_diff += diff
         # Points for controlling the center/number of moves
         for move, x, y in piece.v_moves:
             if (x, y) in [(3, 3), (3, 4), (4, 3), (4, 4)]:
-                center_diff += .4
+                center_diff += .2
             else:
                 center_diff += .1
             # Second part of checkmate logic

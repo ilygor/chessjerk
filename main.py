@@ -130,6 +130,27 @@ if color == 'black':
 else:
     pretty_board(cboard, True)
 
+#cboard.move_piece(cboard[4,1].occ, (4,3), False, False, False)
+#cboard.move_piece(cboard[1,7].occ, (2,5), False, False, False)
+#cboard.move_piece(cboard[4,0].occ, (4,1), False, False, False)
+#cboard.move_piece(cboard[6,7].occ, (5,5), False, False, False)
+#cboard.move_piece(cboard[4,1].occ, (4,2), False, True, False)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # Game loop
 ai_df = None
 check = False
