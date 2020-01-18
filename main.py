@@ -11,6 +11,7 @@ import os
 from pretty_board import pretty_board
 from classes import Chessboard
 from simulate import Simulator
+from flavor import flavor_spitter
 
 # Define constants
 wait = 2 # Amount of time to wait between printouts.
@@ -140,6 +141,10 @@ while True:
     if check:
         if df.score.max() < -200:
             print("That's checkmate! " + cboard.nonturn.upper() + " wins!")
+            if cboard.nonturn == cboard.player_color:
+                flavor_spitter('loss')
+            else:
+                flavor_spitter('victory')
             input("Press enter to quit.\n")
             quit()
     # Stalemate Logic

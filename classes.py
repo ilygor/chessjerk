@@ -9,6 +9,7 @@ Some classes for setting up a simple chess-bot.
 import numpy as np
 from random import sample
 from pretty_board import pretty_board
+from flavor import flavor_spitter
 
 
 # Define Constants
@@ -478,6 +479,7 @@ class Chessboard:
         statement = "Moved " + piece.symbol + " from " + origin_string + \
                     " to " + dest_string + ". "
         dest_piece = self[dest].occ
+        flavor = False
         if dest_piece: # Handle capture
             statement = statement + dest_piece.symbol + " has been captured!"
             self.alive.remove(dest_piece)
@@ -486,6 +488,8 @@ class Chessboard:
                                   + " captured."]
             self.last_capture_turn = self.turn_num
             piece.kill_list += [dest_piece]
+            if self.turn != self.player_color:
+                flavor = True
         else:
             self.move_history += [piece.symbol + ' ' + origin_string + ' > ' + \
                                   dest_string + ': No capture.']
@@ -562,6 +566,8 @@ class Chessboard:
                 self.view(True)
             else:
                 self.view(False)
+            if flavor:
+                flavor_spitter(dest_piece.type)
         return check
 
     def game_over_check(self):

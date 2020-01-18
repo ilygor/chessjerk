@@ -98,7 +98,8 @@ flavor_dict = {
     'knight': knight_capture, 
     'bishop': bishop_capture,
     'rook': rook_capture,
-    'queen': victory,
+    'queen': queen_capture,
+    'victory': victory,
     'loss': loss,
     'castle': castle
     }
@@ -111,14 +112,5 @@ def flavor_spitter(flavor_dict_key):
         print(sample(flavor_dict[flavor_dict_key], 1)[0])
     if sample([0, 1], 1) == [1]:
         print(sample(flavor_dict[flavor_dict_key], 1)[0])
-
-
-
-
-
-
-
-
-
 
 
