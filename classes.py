@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+#Hello
+
 """
 Some classes for setting up a simple chess-bot.
 """
